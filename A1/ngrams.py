@@ -10,7 +10,11 @@ def main():
 		for line in filehandle: # For each line 
 			current_place = line[:-1] # Remove newline
 			train.append(current_place) # Append this sentance to our list of train data
-	unigram_count_vec = unigram_model(train) # Get probability distribution for unigram
+	
+	print("About to run ngram_model\n")
+	unigram_count_vec = ngram_model(train, 1) # Get probability distribution for unigram
+	bigram_count_vec = ngram_model(train, 2) # Get probability distribution for bigram
+	trigram_count_vec = ngram_model(train,3) # Get probability distribution for trigram
 	print("Generated Unigram Distribution") # Tell user where we are inj program
 
 	# Get the dev data
@@ -19,9 +23,18 @@ def main():
 		for line in filehandle: # For each line 
 			current_place = line[:-1] # Remove newline
 			dev.append(current_place) # Append this sentance to our list of dev data
-	yhat = unigram_predict(unigram_count_vec,dev) # Predict sentence likelihoods via unigram
+
+	print("About to run ngram_predict\n")
+	unigram_predictions = ngram_predict(unigram_count_vec,dev, 1) # Predict sentence likelihoods via unigram
+	#print("Done w unigram predict\n")
+	bigram_predictions = ngram_predict(bigram_count_vec, dev, 2)
+	trigram_predictions = ngram_predict(trigram_count_vec, dev, 3)
 	print("Calculated predictions for Unigram") # Update user
-	print(yhat)
+	print(unigram_predictions)
+	#print("Calculated predictions for Bigram")
+	#print(bigram_predictions)
+	#print("Calculated predictions for Trigram")
+	#print(trigram_predictions)
 
 # Get list of words separated by spaces
 def get_tokens(sentence): # Return a list of normalized words
@@ -31,32 +44,40 @@ def get_tokens(sentence): # Return a list of normalized words
 	return normalized # return our list of normalized words
 
 # Extract dictionary of unigram vocabulary and counts of those unigrams
-def unigram_model(train):
-	unigram_corpus = {} # Initialize our dictionary as empty
+def ngram_model(train, n):
+	ngram_corpus = {} # Initialize our dictionary as empty
 	for instance in train: # For each sentance in train
 		tokens = get_tokens(instance) # split sentences into words
-		for word in tokens: # For each word in the sentence
-			if word not in unigram_corpus.keys(): # if this is a new unigram
-				unigram_corpus[word] = 1 # Initialize it's sightings to 1
+		for i in range(0, len(tokens)): # For each word in the sentence
+			w = tokens[i:i+n]
+			if(w == []): # out of bound slices return [], so ignore
+			   break;
+			word = tuple(w)
+			print(word)
+			if word not in ngram_corpus.keys(): # if this is a new unigram
+				ngram_corpus[word] = 1 # Initialize it's sightings to 1
 			else:
-				unigram_corpus[word] += 1 # Increment our counter by 1
+				ngram_corpus[word] += 1 # Increment our counter by 1
+	print("Done w ngram_corpus\n")
 	# Create new dictionary with frequent unigrams, mapping rare unigrams to 'UNK'
 	freq_corpus = {'UNK':0} # Initialize the number of rare words to 0
-	for unigram in unigram_corpus.keys(): # Go through each word and it's count
-		if unigram_corpus[unigram] < 3: # If it was not sighted enough
+	for ngram in ngram_corpus.keys(): # Go through each word and it's count
+		if ngram_corpus[ngram] < 3: # If it was not sighted enough
 			freq_corpus['UNK'] += 1 # Don't add to new dictionary, increment 'UNK' counter
 		else: # Else, we saw it enough to not be considered a rare word
-			freq_corpus[unigram] = unigram_corpus[unigram] # Put this unigram and its count into our new dictionary
+			freq_corpus[ngram] = ngram_corpus[ngram] # Put this unigram and its count into our new dictionary
 	print("Check corpus cardinality: 26602 == ",len(freq_corpus),"?") # Professor told us this should be 26602
 	return freq_corpus
 
 # Predict a sentence's probability via previously extracted vocabulary
-def unigram_predict(vocab,test):
+def ngram_predict(vocab,test,n):
 	yhat = [] # Initialize our vector of predictions as empty
 	for instance in test: # for each sentence in our test data
 		tokens = get_tokens(instance) # split the sentence into unigrams
 		product = 1 # Initialize product as 1 b/c won't affect multiplication
-		for word in tokens: # go through unigrams in this test sentence
+		for i in range(0,len(tokens)-n-1): # go through ngrams in this test sentence
+			w = tokens[i:i+n]
+			word = tuple(w)
 			if word in vocab.keys(): # if this word is in our dictionary
 				count = float(vocab[word]) / len(vocab) # p(uni_i) = c(uni_i in train)/c(uni's in vocab)
 			else: # else, map this rare word to 'UNK'
