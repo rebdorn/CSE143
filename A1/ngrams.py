@@ -11,11 +11,11 @@ def main():
 			current_place = line[:-1] # Remove newline
 			train.append(current_place) # Append this sentance to our list of train data
 	
-	print("About to run ngram_model\n")
-	unigram_count_vec = ngram_model(train, 1) # Get probability distribution for unigram
-	bigram_count_vec = ngram_model(train, 2) # Get probability distribution for bigram
+	print("Running ngram_model...\n")
+	unigram_count_vec = ngram_model(train,1) # Get probability distribution for unigram
+	bigram_count_vec = ngram_model(train,2) # Get probability distribution for bigram
 	trigram_count_vec = ngram_model(train,3) # Get probability distribution for trigram
-	print("Generated Unigram Distribution") # Tell user where we are inj program
+	print("Trigram count vector sample: ", trigram_count_vec)
 
 	# Get the dev data
 	dev = [] # Initialize empty list for development
@@ -24,17 +24,15 @@ def main():
 			current_place = line[:-1] # Remove newline
 			dev.append(current_place) # Append this sentance to our list of dev data
 
-	print("About to run ngram_predict\n")
+	print("Running ngram_predict...")
 	unigram_predictions = ngram_predict(unigram_count_vec,dev, 1) # Predict sentence likelihoods via unigram
-	#print("Done w unigram predict\n")
 	bigram_predictions = ngram_predict(bigram_count_vec, dev, 2)
 	trigram_predictions = ngram_predict(trigram_count_vec, dev, 3)
-	print("Calculated predictions for Unigram") # Update user
-	print(unigram_predictions)
-	#print("Calculated predictions for Bigram")
-	#print(bigram_predictions)
-	#print("Calculated predictions for Trigram")
-	#print(trigram_predictions)
+	print("Calculated predictions for uni, bi and trigrams.") # Update user
+	print("Sample trigram predictions: ",trigram_predictions[:10])
+
+	yhat_interpolated = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, .33, .33, .33)
+	#print("Calculated interpolated data", yhat_interpolated[0:5])
 
 # Get list of words separated by spaces
 def get_tokens(sentence): # Return a list of normalized words
@@ -43,7 +41,7 @@ def get_tokens(sentence): # Return a list of normalized words
 		normalized.append(word) # place word in list
 	return normalized # return our list of normalized words
 
-# Extract dictionary of unigram vocabulary and counts of those unigrams
+# Extract dictionary of n-gram vocabulary and counts of those n-grams
 def ngram_model(train, n):
 	ngram_corpus = {} # Initialize our dictionary as empty
 	for instance in train: # For each sentance in train
@@ -51,14 +49,14 @@ def ngram_model(train, n):
 		for i in range(0, len(tokens)): # For each word in the sentence
 			w = tokens[i:i+n]
 			if(w == []): # out of bound slices return [], so ignore
-			   break;
+			   break
 			word = tuple(w)
-			print(word)
+			#print(word)
 			if word not in ngram_corpus.keys(): # if this is a new unigram
 				ngram_corpus[word] = 1 # Initialize it's sightings to 1
 			else:
 				ngram_corpus[word] += 1 # Increment our counter by 1
-	print("Done w ngram_corpus\n")
+	print("Counted n-grams in building for grams length ",n)
 	# Create new dictionary with frequent unigrams, mapping rare unigrams to 'UNK'
 	freq_corpus = {'UNK':0} # Initialize the number of rare words to 0
 	for ngram in ngram_corpus.keys(): # Go through each word and it's count
@@ -66,7 +64,8 @@ def ngram_model(train, n):
 			freq_corpus['UNK'] += 1 # Don't add to new dictionary, increment 'UNK' counter
 		else: # Else, we saw it enough to not be considered a rare word
 			freq_corpus[ngram] = ngram_corpus[ngram] # Put this unigram and its count into our new dictionary
-	print("Check corpus cardinality: 26602 == ",len(freq_corpus),"?") # Professor told us this should be 26602
+	if(n == 1):
+		print("Check corpus cardinality: 26602 == ",len(freq_corpus),"?") # Professor told us this should be 26602
 	return freq_corpus
 
 # Predict a sentence's probability via previously extracted vocabulary
@@ -85,6 +84,35 @@ def ngram_predict(vocab,test,n):
 			product = float(product) * count # add this probability to our running product
 		yhat.append(product) # append this instance's probability to our predictions
 	return yhat # return predicted probabilities
+
+def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3):
+	yhat_interpolated = []
+	for instance in test: # for each training instance
+		init = 0 # signal we're at the beginning of a new sentence
+		tokens = get_tokens(instance) 
+		for word in tokens:
+			if init == 0: # if we're on the first word, only unigrams
+				theta_uni = float(lamb_1) * ngram_predict(unigram,[instance],1)[0]
+				theta_bi = float(lamb_2) # TODO: how do we do the first couple unigrams?
+				theta_tri = float(lamb_3)
+				init += 1 # Increase location for next time
+			elif init == 1: # if we're on the second word, only uni and bigrams
+				theta_uni = float(lamb_1) * ngram_predict(unigram,[instance],1)[0]
+				theta_bi = float(lamb_2) * ngram_predict(bigram,[instance],2)[0]
+				theta_tri = float(lamb_3)
+				init += 1
+			else: # else, we incorporate uni, bi and trigrams
+				theta_uni = float(lamb_1) * ngram_predict(unigram,[instance],1)[0]
+				theta_bi = float(lamb_2) * ngram_predict(bigram,[instance],2)[0]
+				theta_tri = float(lamb_3) * ngram_predict(trigram,[instance],3)[0]
+				#if init == 2:
+					#print("Unigram alone prediction: ", ngram_predict(unigram,[instance],1)[0])
+					#print("Bigram alone prediction: ", ngram_predict(bigram,[instance],2)[0])
+					#print("Trigram alone prediction: ", ngram_predict(trigram,[instance],3)[0])
+					#init += 1
+		theta_smoothed = theta_uni + theta_bi + theta_tri
+		yhat_interpolated.append(theta_smoothed)
+	return yhat_interpolated
 			
 if __name__ == "__main__":
     main()
