@@ -44,7 +44,9 @@ def get_tokens(sentence): # Return a list of normalized words
 # Extract dictionary of n-gram vocabulary and counts of those n-grams
 def ngram_model(train, n):
 	ngram_corpus = {} # Initialize our dictionary as empty
+	stop_count = 0 # counts the number of lines, which is the number of stop tokens
 	for instance in train: # For each sentance in train
+		stop_count += 1
 		tokens = get_tokens(instance) # split sentences into words
 		for i in range(0, len(tokens)): # For each word in the sentence
 			w = tokens[i:i+n]
@@ -57,8 +59,9 @@ def ngram_model(train, n):
 			else:
 				ngram_corpus[word] += 1 # Increment our counter by 1
 	print("Counted n-grams in building for grams length ",n)
+	#print( "Stop count is", stop_count)
 	# Create new dictionary with frequent unigrams, mapping rare unigrams to 'UNK'
-	freq_corpus = {'UNK':0} # Initialize the number of rare words to 0
+	freq_corpus = {'UNK':0, 'STOP':stop_count} # Initialize the number of rare words to 0
 	for ngram in ngram_corpus.keys(): # Go through each word and it's count
 		if ngram_corpus[ngram] < 3: # If it was not sighted enough
 			freq_corpus['UNK'] += 1 # Don't add to new dictionary, increment 'UNK' counter
