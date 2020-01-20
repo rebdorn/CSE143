@@ -15,7 +15,7 @@ def main():
 	unigram_count_vec = ngram_model(train,1) # Get probability distribution for unigram
 	bigram_count_vec = ngram_model(train,2) # Get probability distribution for bigram
 	trigram_count_vec = ngram_model(train,3) # Get probability distribution for trigram
-	print("Trigram count vector sample: ", trigram_count_vec)
+	#print("Trigram count vector sample: ", trigram_count_vec[:5])
 
 	# Get the dev data
 	dev = [] # Initialize empty list for development
@@ -26,12 +26,14 @@ def main():
 
 	print("Running ngram_predict...")
 	unigram_predictions = ngram_predict(unigram_count_vec,dev, 1) # Predict sentence likelihoods via unigram
+	print("Predicted unigrams.")
 	bigram_predictions = ngram_predict(bigram_count_vec, dev, 2)
+	print("Predicted bigrams: ", bigram_predictions[:5])
 	trigram_predictions = ngram_predict(trigram_count_vec, dev, 3)
 	print("Calculated predictions for uni, bi and trigrams.") # Update user
 	print("Sample trigram predictions: ",trigram_predictions[:10])
 
-	yhat_interpolated = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, .33, .33, .33)
+	yhat_interpolated = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, .33, .33, .34)
 	#print("Calculated interpolated data", yhat_interpolated[0:5])
 
 # Get list of words separated by spaces
@@ -81,7 +83,22 @@ def ngram_predict(vocab,test,n):
 			w = tokens[i:i+n]
 			word = tuple(w)
 			if word in vocab.keys(): # if this word is in our dictionary
-				count = float(vocab[word]) / len(vocab) # p(uni_i) = c(uni_i in train)/c(uni's in vocab)
+				if n == 1:
+					count = float(vocab[word]) / len(vocab) # p(uni_i) = c(uni_i in train)/c(uni's in vocab)
+				elif n == 2:
+					# get context
+					context = {k : v for k, v in mydict.items() if k.}
+					for bigram in vocab.keys():
+						if bigram[0] == word[0]:
+							context += 1
+					count = float(vocab[word]) / context
+				elif n == 3:
+					# get context
+					context = 0
+					for trigram in vocab.keys():
+						if trigram[:2] == word[:2]:
+							context += 1
+					count = float(vocab[word]) / context
 			else: # else, map this rare word to 'UNK'
 				count = float(vocab['UNK']) / len(vocab) # p('UNK') = c('UNK' in train)/c(uni's in vocab)
 			product = float(product) * count # add this probability to our running product
