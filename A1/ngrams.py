@@ -53,7 +53,7 @@ def ngram_model(train, n):
 		tokens.append('<STOP>')	# append STOP to the end of each sentence
 		for i in range(0, len(tokens)): # For each word in the sentence
 			w = tokens[i:i+n]
-			if(w == []): # out of bound slices return [], so ignore
+			if(len(w) < n): # out of bound slices, ignore
 			   break
 			word = tuple(w)
 			#print(word)
