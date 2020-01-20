@@ -87,7 +87,7 @@ def ngram_predict(vocab,test,n):
 					count = float(vocab[word]) / len(vocab) # p(uni_i) = c(uni_i in train)/c(uni's in vocab)
 				elif n == 2:
 					# get context
-					context = {k : v for k, v in mydict.items() if k.}
+					context = 0
 					for bigram in vocab.keys():
 						if bigram[0] == word[0]:
 							context += 1
