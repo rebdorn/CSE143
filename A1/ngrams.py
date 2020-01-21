@@ -4,6 +4,8 @@
 # cruzid: radorn, [other cruzid]
 import pandas as pd
 
+#include <string.h>
+
 def main():
 	# Get the training data
 	train = [] # Initialize empty list for training data
