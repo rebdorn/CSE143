@@ -14,7 +14,7 @@ def main():
 			train.append(current_place) # Append this sentance to our list of train data
 	unigram_count_vec = unigram_model(train)
 	bigram_count_vec = bigram_model(train) # Get probability distribution for unigram
-	#trigram_count_vec = trigram_model(train)
+	trigram_count_vec = trigram_model(train)
 	print("Generated Uni/Bi/Trigram Distributions") # Tell user where we are inj program
 
 	# Get the dev data
@@ -27,7 +27,10 @@ def main():
 	dev = dev[:10]
 	yhat_unigram = unigram_predict(unigram_count_vec,dev)
 	yhat_bigram = bigram_predict(bigram_count_vec,dev)
-	#yhat_trigram = trigram_predict(trigram_count_vec,dev)
+	yhat_trigram = trigram_predict(trigram_count_vec,dev)
+	print(yhat_unigram)
+	print(yhat_bigram)
+	print(yhat_trigram)
 	#yhat = unigram_predict(unigram_count_vec,dev) # Predict sentence likelihoods via unigram
 	#print("Calculated predictions for Unigram", yhat) # Update user
 
@@ -90,6 +93,37 @@ def bigram_model(train):
 			freq_corpus.append([bigram0,bigram1,count])
 	return freq_corpus
 
+def trigram_model(train):
+	trigram_corpus = {} # Initialize our dictionary as empty
+	#bigram_corpus[('<START>', tokens[0])] 
+	for j, instance in enumerate(train): # For each sentance in train
+		tokens = get_tokens(instance) # split sentences into words
+		tokens.insert(0,'<START>')
+		tokens.append('<STOP>')
+		# print("Iteration ",j,"out of ",len(train))
+		for i in range(0,len(tokens)-2): # for each bigram
+			# if i == -1: # if we need to include the <START> token
+			# 	trigram = ('<START>',tokens[0]) # set bigram accordingly
+			# elif i+2 == len(tokens): # if the second unigram is <STOP>
+			# 	trigram = (tokens[i],'<STOP>') # set bigram accordingly
+			# else:
+			trigram = (tokens[i], tokens[i+1], tokens[i+2]) # set bigram, instead of tokens[i:i+2]
+			if trigram not in trigram_corpus.keys(): # if this is a new bigram
+				trigram_corpus[trigram] = 1 # initialize our bigram count to 1
+			else:
+				trigram_corpus[trigram] += 1 # increment bigram counter
+	# go through bigram corpus, change UNKs
+
+	freq_corpus = [['UNK','UNK',0]] # initialize our list of lists to be UNK
+	for item in trigram_corpus.items():
+		trigram, count = item
+		trigram0, trigram1, trigram2 = trigram
+		if count < 3:
+			freq_corpus[0][2] += 1
+		else:
+			freq_corpus.append([trigram0,trigram1,trigram2,count])
+	return freq_corpus
+
 # Predict a sentence's probability via previously extracted vocabulary
 def unigram_predict(vocab,test):
 	yhat = [] # Initialize our vector of predictions as empty
@@ -131,6 +165,42 @@ def bigram_predict(vocab,test):
 				if count_similar == 0: # this is a new bigram
 					count_similar = len(vocab) # number of bigrams
 					count_match = vocab[0][2] # number of 'UNK'
+			prob_word = float(count_match) / count_similar
+			prob_sentence = prob_sentence * prob_word
+		yhat.append(prob_sentence)
+	return yhat
+
+def trigram_predict(vocab,test):
+
+	# Generate proabilities for sentences
+	yhat = [] # initialize yhat as empty
+	for i, instance in enumerate(test): # for each sentence
+		print("Iteration ",i,"out of ",len(test))
+		tokens = get_tokens(instance) # split instance into list by " "
+		tokens.insert(0,'<START>')
+		tokens.append('<STOP>');
+		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
+		for i in range(0,len(tokens)-2):
+			# if i == -1: # if we need to signal start
+			# 	bigram = ('<START>', tokens[0]) # set bigram accordingly
+			# elif i == (len(tokens)-1): # elif were at the end
+			# 	bigram = (tokens[i],'<STOP>') # set bigram accordingly
+			# else:
+			trigram = (tokens[i],tokens[i+1],tokens[i+2]) # set bigram
+			trigram0, trigram1, trigram2 = trigram
+			count_similar = 0 # initialize similarity count to 0
+			for instance in vocab:
+				# bi0 is instance[0], bi1 is instance[1] and count is instance[2]
+				if instance == trigram:
+					count_match = instance[3]
+				elif instance[0] == trigram0 and instance[1] == trigram1: # only will hit this clause if not full match
+					count_similar += instance[3]
+
+				if count_similar == 0: # this is a new bigram
+					count_similar = len(vocab) # number of bigrams
+					print("Len vocab: ", len(vocab))
+					count_match = vocab[0][2] # number of 'UNK'
+
 			prob_word = float(count_match) / count_similar
 			prob_sentence = prob_sentence * prob_word
 		yhat.append(prob_sentence)
