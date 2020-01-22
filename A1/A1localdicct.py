@@ -189,6 +189,8 @@ def trigram_predict(vocab,test,trigram_count):
 		yhat.append(prob_sentence)
 	return yhat
 
+#def perplexity():
+
 def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count):
 	yhat_interpolated = []
 	# piazza 37
@@ -203,7 +205,7 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 			current_trigram = (tokens[i],tokens[i+1],tokens[i+2])
 			uni_prediction = unigram_predict(unigram,instance,unigram_count)
 			bi_prediction = bigram_predict(bigram,instance,bigram_count)
-			tri_prediction = 
+			#tri_prediction = 
 			if init == 0: # if we're on the first word, only unigrams
 				theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
 				theta_bi = 1 # TODO: how do we do the first couple unigrams?
