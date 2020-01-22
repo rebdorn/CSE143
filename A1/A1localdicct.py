@@ -31,6 +31,12 @@ def main():
 	print(yhat_unigram)
 	print(yhat_bigram)
 	print(yhat_trigram)
+
+	lamb_1 = 0.33
+	lamb_2 = 0.33
+	lamb_3 = 0.34
+	what = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count)
+	print(what)
 	#yhat = unigram_predict(unigram_count_vec,dev) # Predict sentence likelihoods via unigram
 	#print("Calculated predictions for Unigram", yhat) # Update user
 
@@ -63,7 +69,6 @@ def unigram_model(train):
 		else: # Else, we saw it enough to not be considered a rare word
 			freq_corpus[unigram] = unigram_corpus[unigram] # Put this unigram and its count into our new dictionary
 			total_count += freq_corpus[unigram]
-	# print("Check corpus cardinality: 26603 == ",len(freq_corpus),"?") # Professor told us this should be 26602
 	return freq_corpus, total_count
 
 def bigram_model(train):
@@ -89,7 +94,6 @@ def bigram_model(train):
 		else:
 			freq_corpus.append([bigram0,bigram1,count])
 		total_count += count
-	print("total bigrams in train: ",total_count)
 	return freq_corpus, total_count
 
 def trigram_model(train):
@@ -115,7 +119,6 @@ def trigram_model(train):
 		else:
 			freq_corpus.append([trigram0,trigram1,trigram2,count])
 		total_count += count
-	print("total trigrams in train: ", total_count)
 	return (freq_corpus, total_count)
 
 # Predict a sentence's probability via previously extracted vocabulary
@@ -173,7 +176,6 @@ def trigram_predict(vocab,test,trigram_count):
 			count_match = 0
 			count_similar = 0 # initialize similarity count to 0
 			for instance in vocab:
-				# bi0 is instance[0], bi1 is instance[1] and count is instance[2]
 				if instance == trigram:
 					count_match = instance[3]
 					count_similar += instance[3]
@@ -187,25 +189,35 @@ def trigram_predict(vocab,test,trigram_count):
 		yhat.append(prob_sentence)
 	return yhat
 
-def interpolate(test, unigram, bigram, trigam, lamb_1, lamb_2, lamb_3):
+def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count):
 	yhat_interpolated = []
+	# piazza 37
 	for instance in test: # for each training instance
 		init = 0 # signal we're at the beginning of a new sentence
 		tokens = get_tokens(instance) 
-		for word in tokens:
+		tokens.insert(0,'<START>')
+		tokens.append('<STOP>')
+		for i in range(0,len(tokens)):
+			current_unigram = tokens[i]
+			current_bigram = (tokens[i],tokens[i+1])
+			current_trigram = (tokens[i],tokens[i+1],tokens[i+2])
+			uni_prediction = unigram_predict(unigram,instance,unigram_count)
+			bi_prediction = bigram_predict(bigram,instance,bigram_count)
+			tri_prediction = 
 			if init == 0: # if we're on the first word, only unigrams
-				theta_uni = lamb_1 * unigram_predict(unigram,instance)
-				theta_bi = 0 # TODO: how do we do the first couple unigrams?
+				theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
+				theta_bi = 1 # TODO: how do we do the first couple unigrams?
+				theta_tri = 1
 				init += 1 # Increase location for next time
 			elif init == 1: # if we're on the second word, only uni and bigrams
-				theta_uni = lamb_1 * unigram_predict(unigram,instance)
-				theta_bi = lamb_2 * bigram_predict(bigram,instance)
-				theta_tri = 0
+				theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
+				theta_bi = lamb_2 * bigram_predict(bigram,instance,bigram_count)
+				theta_tri = 1
 				init += 1
 			else: # else, we incorporate uni, bi and trigrams
-				theta_uni = lamb_1 * unigram_predict(unigram,instance)
-				theta_bi = lamb_2 * bigram_predict(bigram,instance)
-				theta_tri = lamb_3 * trigram_predict(trigram,instance)
+				theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
+				theta_bi = lamb_2 * bigram_predict(bigram,instance,bigram_count)
+				theta_tri = lamb_3 * trigram_predict(trigram,instance,trigram_count)
 		theta_smoothed = theta_uni + theta_bi + theta_tri
 		yhat_interpolated.append(theta_smoothed)
 	return yhat_interpolated
