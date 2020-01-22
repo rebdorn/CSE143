@@ -2,8 +2,7 @@
 # Assignment 1: Language Modeling and Smoothing
 # Erica Fong, David Nguyen and Rebecca Dorn
 # cruzid: radorn, [other cruzid]
-import pandas as pd
-import numpy as np
+import math
 
 def main():
 	# Get the training data
@@ -32,11 +31,13 @@ def main():
 	print(yhat_bigram)
 	print(yhat_trigram)
 
-	lamb_1 = 0.33
+	sentence1_perplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
+	print("Sentence 1 perplexity: ",sentence1_perplex)
+	#lamb_1 = 0.33
 	lamb_2 = 0.33
-	lamb_3 = 0.34
-	what = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count)
-	print(what)
+	#lamb_3 = 0.34
+	#what = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count)
+	#print(what)
 	#yhat = unigram_predict(unigram_count_vec,dev) # Predict sentence likelihoods via unigram
 	#print("Calculated predictions for Unigram", yhat) # Update user
 
@@ -59,16 +60,16 @@ def unigram_model(train):
 				unigram_corpus[word] = 1 # Initialize it's sightings to 1
 			else:
 				unigram_corpus[word] += 1 # Increment our counter by 1
-	# Create new dictionary with frequent unigrams, mapping rare unigrams to 'UNK'
-	total_count = 0
-	freq_corpus = {'UNK':0} # Initialize the number of rare words to 0
-	for unigram in unigram_corpus.keys(): # Go through each word and it's count
-		if unigram_corpus[unigram] < 3: # If it was not sighted enough
-			freq_corpus['UNK'] += unigram_corpus[unigram] # Don't add to new dictionary, increment 'UNK' counter
-			total_count += unigram_corpus[unigram]
+	# Create new list of list with frequent unigrams, mapping rare unigrams to 'UNK'
+	total_count = 0 # initialize total number of unigrams in train to be 0
+	freq_corpus = [['UNK',0]] # Initialize the number of rare words to 0
+	for item in unigram_corpus.items(): # Go through each word and it's count
+		unigram, count = item
+		if count < 3: # If it was not sighted enough
+			freq_corpus[0][1] += count # Don't add to new dictionary, increment 'UNK' counter
 		else: # Else, we saw it enough to not be considered a rare word
-			freq_corpus[unigram] = unigram_corpus[unigram] # Put this unigram and its count into our new dictionary
-			total_count += freq_corpus[unigram]
+			freq_corpus.append([unigram,count]) # Put this unigram and its count into our new dictionary
+		total_count += count
 	return freq_corpus, total_count
 
 def bigram_model(train):
@@ -128,10 +129,14 @@ def unigram_predict(vocab,test,unigram_count):
 		tokens = get_tokens(instance) # split the sentence into unigrams
 		product = 1 #vocab['<STOP>']/len(vocab) # Initialize product as count of stop
 		for word in tokens: # go through unigrams in this test sentence
-			if word in vocab.keys(): # if this word is in our dictionary
-				count = float(vocab[word])/unigram_count # p(uni_i) = c(uni_i in train)/c(uni's in vocab)
-			else: # else, map this rare word to 'UNK'
-				count = float(vocab['UNK'])/unigram_count # p('UNK') = c('UNK' in train)/c(uni's in vocab)
+			found = 0
+			for unigram in vocab:
+				uni, unicount = unigram
+				if unigram[0] == word:
+					count = float(unigram[1])/unigram_count
+					found = 1
+			if found == 0: # if we still havent found it
+				count = float(unigram[0][1])/unigram_count # 'UNK' count
 			product = float(product)*count # add this probability to our running product
 		yhat.append(product / len(vocab)) # append this instance's probability to our predictions
 	return yhat # return predicted probabilities
@@ -169,7 +174,7 @@ def trigram_predict(vocab,test,trigram_count):
 	for i, instance in enumerate(test): # for each sentence
 		tokens = get_tokens(instance) # split instance into list by " "
 		tokens.insert(0,'<START>')
-		tokens.append('<STOP>');
+		tokens.append('<STOP>')
 		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
 		for i in range(0,len(tokens)-2):
 			trigram = (tokens[i],tokens[i+1],tokens[i+2]) # set trigram
@@ -189,7 +194,31 @@ def trigram_predict(vocab,test,trigram_count):
 		yhat.append(prob_sentence)
 	return yhat
 
-#def perplexity():
+def perplexity(instances, ngrammodel, ngramvocab, ngramcount):
+	perplexities = []
+	for instance in instances:
+		tokens = get_tokens(instance) # split instance into list by " "
+		tokens.insert(0,'<START>') # add the start token
+		tokens.append('<STOP>') # add the stop token
+		logprob_sum = 0
+		for word in tokens:
+			if ngrammodel == 1: # if we're evaluating p() on unigrams
+				foundword = 0
+				for unigram in ngramvocab: # check if we know this word
+					if word == unigram: # we found this word
+						curr_prob = float(unigram[1])/ngramcount
+						foundword = 1
+						print('myes')
+				if foundword == 0: # map to UNK
+					curr_prob = float(ngramvocab[0][1])/ngramcount
+
+				logprob_sum += float(math.log(curr_prob,2))
+				print(math.log(curr_prob,2))
+		l = float((-1/len(tokens))) * float(logprob_sum)
+		toappend = 2 ** l
+		perplexities.append(toappend)
+	return perplexities
+
 
 def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count):
 	yhat_interpolated = []
