@@ -8,22 +8,26 @@ import numpy as np
 def main():
 	# Get the training data
 	train = [] # Initialize empty list for training data
-	with open('CSE143/A1/A1-Data/1b_benchmark.train.tokens', 'r') as filehandle: # Open train data
+	with open('A1-Data/1b_benchmark.train.tokens', 'r') as filehandle: # Open train data
 		for line in filehandle: # For each line 
 			current_place = line[:-1] # Remove newline
 			train.append(current_place) # Append this sentance to our list of train data
+	unigram_count_vec = unigram_model(train)
 	bigram_count_vec = bigram_model(train) # Get probability distribution for unigram
-	print("Generated Bigram Distribution") # Tell user where we are inj program
+	#trigram_count_vec = trigram_model(train)
+	print("Generated Uni/Bi/Trigram Distributions") # Tell user where we are inj program
 
 	# Get the dev data
 	dev = [] # Initialize empty list for development
-	with open('CSE143/A1/A1-Data/1b_benchmark.dev.tokens', 'r') as filehandle: # Open dev data
+	with open('A1-Data/1b_benchmark.dev.tokens', 'r') as filehandle: # Open dev data
 		for line in filehandle: # For each line 
 			current_place = line[:-1] # Remove newline
 			dev.append(current_place) # Append this sentance to our list of dev data
+	# WHILE TESTING only do 10 instances
+	dev = dev[:10]
+	yhat_unigram = unigram_predict(unigram_count_vec,dev)
 	yhat_bigram = bigram_predict(bigram_count_vec,dev)
-	print(yhat_bigram)
-	
+	#yhat_trigram = trigram_predict(trigram_count_vec,dev)
 	#yhat = unigram_predict(unigram_count_vec,dev) # Predict sentence likelihoods via unigram
 	#print("Calculated predictions for Unigram", yhat) # Update user
 
