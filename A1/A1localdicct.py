@@ -11,17 +11,20 @@ def main():
 		for line in filehandle: # For each line 
 			current_place = line[:-1] # Remove newline
 			train.append(current_place) # Append this sentance to our list of train data
+
+	# Get probability distribution for unigram, bigram and trigrams using the training data
 	unigram_count_vec, unigram_count = unigram_model(train)
-	bigram_count_vec, bigram_count = bigram_model(train) # Get probability distribution for unigram
+	bigram_count_vec, bigram_count = bigram_model(train) 
 	trigram_count_vec, trigram_count = trigram_model(train)
 	print("Generated Uni/Bi/Trigram Distributions") # Tell user where we are inj program
 
-	# Get the dev datai
+	# Get the dev data
 	dev = [] # Initialize empty list for development
 	with open('A1-Data/1b_benchmark.dev.tokens', 'r') as filehandle: # Open dev data
 		for line in filehandle: # For each line 
 			current_place = line[:-1] # Remove newline
 			dev.append(current_place) # Append this sentance to our list of dev data
+
 	# WHILE TESTING only do 10 instances
 	dev = dev[:10]
 	yhat_unigram = unigram_predict(unigram_count_vec,dev,unigram_count)
@@ -33,11 +36,13 @@ def main():
 
 	sentence1_perplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
 	print("Sentence 1 perplexity: ",sentence1_perplex)
-	#lamb_1 = 0.33
-	# lamb_2 = 0.33
-	#lamb_3 = 0.34
-	#what = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count)
-	#print(what)
+
+	
+	lamb_1 = 0.33
+	lamb_2 = 0.33
+	lamb_3 = 0.34
+	what = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count)
+	print(what)
 	#yhat = unigram_predict(unigram_count_vec,dev) # Predict sentence likelihoods via unigram
 	#print("Calculated predictions for Unigram", yhat) # Update user
 
@@ -103,16 +108,16 @@ def trigram_model(train):
 		tokens = get_tokens(instance) # split sentences into words
 		tokens.insert(0,'<START>')
 		tokens.append('<STOP>')
-		for i in range(0,len(tokens)-2): # for each bigram
-			trigram = (tokens[i], tokens[i+1], tokens[i+2]) # set bigram, instead of tokens[i:i+2]
-			if trigram not in trigram_corpus.keys(): # if this is a new bigram
-				trigram_corpus[trigram] = 1 # initialize our bigram count to 1
+		for i in range(0,len(tokens)-2): # for each trigram
+			trigram = (tokens[i], tokens[i+1], tokens[i+2]) # set trigram 
+			if trigram not in trigram_corpus.keys(): # if this is a new trigram
+				trigram_corpus[trigram] = 1 # initialize our trigram count to 1
 			else:
-				trigram_corpus[trigram] += 1 # increment bigram counter
+				trigram_corpus[trigram] += 1 # increment trigram counter
 	# go through trigram corpus, change UNKs
 	freq_corpus = [['UNK','UNK','UNK',0]] # initialize our list of lists to be UNK
 	total_count = 0
-	for item in trigram_corpus.items():
+	for item in trigram_corpus.items():  
 		trigram, count = item
 		trigram0, trigram1, trigram2 = trigram
 		if count < 3:
@@ -126,9 +131,11 @@ def trigram_model(train):
 def unigram_predict(vocab,test,unigram_count):
 	yhat = [] # Initialize our vector of predictions as empty
 	for instance in test: # for each sentence in our test data
+		print("instance is ", instance)
 		tokens = get_tokens(instance) # split the sentence into unigrams
 		product = 1 #vocab['<STOP>']/len(vocab) # Initialize product as count of stop
 		for word in tokens: # go through unigrams in this test sentence
+			print("word is ", instance)
 			found = 0
 			for unigram in vocab:
 				uni, unicount = unigram
@@ -173,20 +180,20 @@ def trigram_predict(vocab,test,trigram_count):
 	yhat = [] # initialize yhat as empty
 	for i, instance in enumerate(test): # for each sentence
 		tokens = get_tokens(instance) # split instance into list by " "
-		tokens.insert(0,'<START>')
-		tokens.append('<STOP>')
+		tokens.insert(0,'<START>') # prepend <START> token to each sentence
+		tokens.append('<STOP>') # append <STOP> token to each sentence
 		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
 		for i in range(0,len(tokens)-2):
 			trigram = (tokens[i],tokens[i+1],tokens[i+2]) # set trigram
 			count_match = 0
 			count_similar = 0 # initialize similarity count to 0
-			for instance in vocab:
-				if instance == trigram:
+			for instance in vocab: # for each trigram in train
+				if instance == trigram: # if equal to trigram in test, increase count_similar
 					count_match = instance[3]
 					count_similar += instance[3]
 				elif instance[0] == tokens[i] and instance[1] == tokens[i+1]: # only will hit this clause if not full match
 					count_similar += instance[3]
-			if count_match == 0: # this is a new bigram
+			if count_match == 0: # this is a new trigram
 				count_similar = trigram_count # number of trigrams
 				count_match = vocab[0][3] # number of 'UNK'
 			prob_word = float(count_match) / count_similar
@@ -226,7 +233,7 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 		tokens = get_tokens(instance) 
 		tokens.insert(0,'<START>')
 		tokens.append('<STOP>')
-		for i in range(0,len(tokens)):
+		for i in range(0,len(tokens)-2):
 			current_unigram = tokens[i]
 			current_bigram = (tokens[i],tokens[i+1])
 			current_trigram = (tokens[i],tokens[i+1],tokens[i+2])
@@ -234,7 +241,9 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 			bi_prediction = bigram_predict(bigram,instance,bigram_count)
 			#tri_prediction = 
 			if init == 0: # if we're on the first word, only unigrams
-				theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
+				print("Token is ", current_unigram)
+				print(unigram_predict(unigram, current_unigram ,unigram_count))
+				theta_uni = lamb_1 * float(unigram_predict(unigram, ,unigram_count))
 				theta_bi = 1 # TODO: how do we do the first couple unigrams?
 				theta_tri = 1
 				init += 1 # Increase location for next time
