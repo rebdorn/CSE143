@@ -16,7 +16,7 @@ def main():
 	trigram_count_vec, trigram_count = trigram_model(train)
 	print("Generated Uni/Bi/Trigram Distributions") # Tell user where we are inj program
 
-	# Get the dev data
+	# Get the dev datai
 	dev = [] # Initialize empty list for development
 	with open('A1-Data/1b_benchmark.dev.tokens', 'r') as filehandle: # Open dev data
 		for line in filehandle: # For each line 
@@ -34,7 +34,7 @@ def main():
 	sentence1_perplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
 	print("Sentence 1 perplexity: ",sentence1_perplex)
 	#lamb_1 = 0.33
-	lamb_2 = 0.33
+	# lamb_2 = 0.33
 	#lamb_3 = 0.34
 	#what = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count)
 	#print(what)
@@ -205,13 +205,11 @@ def perplexity(instances, ngrammodel, ngramvocab, ngramcount):
 			if ngrammodel == 1: # if we're evaluating p() on unigrams
 				foundword = 0
 				for unigram in ngramvocab: # check if we know this word
-					if word == unigram: # we found this word
+					if word == unigram[0]: # we found this word
 						curr_prob = float(unigram[1])/ngramcount
 						foundword = 1
-						print('myes')
 				if foundword == 0: # map to UNK
 					curr_prob = float(ngramvocab[0][1])/ngramcount
-
 				logprob_sum += float(math.log(curr_prob,2))
 				print(math.log(curr_prob,2))
 		l = float((-1/len(tokens))) * float(logprob_sum)
