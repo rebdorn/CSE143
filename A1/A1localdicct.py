@@ -34,15 +34,15 @@ def main():
 	print(yhat_bigram)
 	print(yhat_trigram)
 
-	sentence1_perplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
-	print("Sentence 1 perplexity: ",sentence1_perplex)
+	#sentence1_perplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
+	#print("Sentence 1 perplexity: ",sentence1_perplex)
 
 	
 	lamb_1 = 0.33
 	lamb_2 = 0.33
 	lamb_3 = 0.34
-	what = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count)
-	print(what)
+	#what = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count)
+	#print(what)
 	#yhat = unigram_predict(unigram_count_vec,dev) # Predict sentence likelihoods via unigram
 	#print("Calculated predictions for Unigram", yhat) # Update user
 
@@ -131,11 +131,11 @@ def trigram_model(train):
 def unigram_predict(vocab,test,unigram_count):
 	yhat = [] # Initialize our vector of predictions as empty
 	for instance in test: # for each sentence in our test data
-		print("instance is ", instance)
+		# print("instance is ", instance)
 		tokens = get_tokens(instance) # split the sentence into unigrams
 		product = 1 # Initialize product as count of stop
 		for word in tokens: # go through unigrams in this test sentence
-			print("word is ", instance)
+			# print("word is ", instance)
 			found = 0
 			for unigram in vocab:
 				if unigram[0] == word:
@@ -152,7 +152,7 @@ def bigram_predict(vocab,test,bigram_count):
 	yhat = [] # initialize yhat as empty
 	for i, instance in enumerate(test): # for each sentence
 		tokens = get_tokens(instance) # split instance into list by " "
-		tokens.insert(0,'<START>')
+		# tokens.insert(0,'<START>')
 		tokens.append('<STOP>')
 		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
 		for i in range(0,len(tokens)-1): # for each bigram in this sentence
@@ -179,7 +179,7 @@ def trigram_predict(vocab,test,trigram_count):
 	yhat = [] # initialize yhat as empty
 	for i, instance in enumerate(test): # for each sentence
 		tokens = get_tokens(instance) # split instance into list by " "
-		tokens.insert(0,'<START>') # prepend <START> token to each sentence
+		# tokens.insert(0,'<START>') # prepend <START> token to each sentence
 		tokens.append('<STOP>') # append <STOP> token to each sentence
 		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
 		for i in range(0,len(tokens)-2): 
@@ -241,7 +241,7 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 			if init == 0: # if we're on the first word, only unigrams
 				print("Token is ", current_unigram)
 				print(unigram_predict(unigram, current_unigram ,unigram_count))
-				theta_uni = lamb_1 * float(unigram_predict(unigram, ,unigram_count))
+				theta_uni = lamb_1 * float(unigram_predict(unigram,instance,unigram_count))
 				theta_bi = 1 # TODO: how do we do the first couple unigrams?
 				theta_tri = 1
 				init += 1 # Increase location for next time
