@@ -18,6 +18,13 @@ def main():
 	trigram_count_vec, trigram_count = trigram_model(train)
 	print("Generated Uni/Bi/Trigram Distributions") # Tell user where we are inj program
 
+	sum_to_one = float(0)
+	for word in trigram_count_vec:
+		trigram0, trigram1, trigram2, count = word
+		#print(float(count),"/",trigram_count," = ", float(count) / trigram_count)
+		sum_to_one += float(count) / trigram_count
+	print("sum to 1 check: ", sum_to_one)
+
 	# Get the dev data
 	dev = [] # Initialize empty list for development
 	with open('A1-Data/1b_benchmark.dev.tokens', 'r') as filehandle: # Open dev data
@@ -58,7 +65,6 @@ def unigram_model(train):
 	unigram_corpus = {} # Initialize our dictionary as empty
 	for instance in train: # For each sentance in train
 		tokens = get_tokens(instance) # split sentences into words
-		tokens.insert(0,'<START>')
 		tokens.append('<STOP>')
 		for word in tokens: # For each word in the sentence
 			if word not in unigram_corpus.keys(): # if this is a new unigram
@@ -107,6 +113,8 @@ def trigram_model(train):
 	for j, instance in enumerate(train): # For each sentance in train
 		tokens = get_tokens(instance) # split sentences into words
 		tokens.insert(0,'<START>')
+		tokens.insert(0,'<START>')
+		tokens.append('<STOP>')
 		tokens.append('<STOP>')
 		for i in range(0,len(tokens)-2): # for each trigram
 			trigram = (tokens[i], tokens[i+1], tokens[i+2]) # set trigram 
@@ -116,26 +124,24 @@ def trigram_model(train):
 				trigram_corpus[trigram] += 1 # increment trigram counter
 	# go through trigram corpus, change UNKs
 	freq_corpus = [['UNK','UNK','UNK',0]] # initialize our list of lists to be UNK
-	total_count = 0
-	for item in trigram_corpus.items():  
-		trigram, count = item
-		trigram0, trigram1, trigram2 = trigram
-		if count < 3:
-			freq_corpus[0][3] += 1
-		else:
-			freq_corpus.append([trigram0,trigram1,trigram2,count])
-		total_count += count
-	return (freq_corpus, total_count)
+	total_count = 0 # intiailize the number of trigrams in our corpus to 0
+	for item in trigram_corpus.items(): # for each trigram we've seen in train
+		trigram, count = item # unpack this trigram
+		trigram0, trigram1, trigram2 = trigram # unpack the unigrams in the trigram
+		if count < 3: # if we've seen this trigram less than 3 times
+			freq_corpus[0][3] += 1 # consider it rare, increase the number of UNK trigrams we've seen
+		else: # else, this is not a rare word
+			freq_corpus.append([trigram0,trigram1,trigram2,count]) # append this trigram and its count to our frequent corpus
+		total_count += count # add the total number of trigrams to our total_count
+	return (freq_corpus, total_count) # return our frequent_corpus and the total number of trigrams we saw in train
 
 # Predict a sentence's probability via previously extracted vocabulary
 def unigram_predict(vocab,test,unigram_count):
 	yhat = [] # Initialize our vector of predictions as empty
 	for instance in test: # for each sentence in our test data
-		# print("instance is ", instance)
 		tokens = get_tokens(instance) # split the sentence into unigrams
 		product = 1 # Initialize product as count of stop
 		for word in tokens: # go through unigrams in this test sentence
-			# print("word is ", instance)
 			found = 0
 			for unigram in vocab:
 				if unigram[0] == word:
@@ -152,7 +158,7 @@ def bigram_predict(vocab,test,bigram_count):
 	yhat = [] # initialize yhat as empty
 	for i, instance in enumerate(test): # for each sentence
 		tokens = get_tokens(instance) # split instance into list by " "
-		# tokens.insert(0,'<START>')
+		tokens.insert(0,'<START>')
 		tokens.append('<STOP>')
 		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
 		for i in range(0,len(tokens)-1): # for each bigram in this sentence
@@ -175,12 +181,13 @@ def bigram_predict(vocab,test,bigram_count):
 
 def trigram_predict(vocab,test,trigram_count):
 	# Generate proabilities for sentences
-	print(trigram_count)
 	yhat = [] # initialize yhat as empty
 	for i, instance in enumerate(test): # for each sentence
 		tokens = get_tokens(instance) # split instance into list by " "
-		# tokens.insert(0,'<START>') # prepend <START> token to each sentence
+		tokens.insert(0,'<START>') # prepend <START> token to each sentence
+		tokens.insert(0,'<START>')
 		tokens.append('<STOP>') # append <STOP> token to each sentence
+		tokens.append('<STOP>')
 		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
 		for i in range(0,len(tokens)-2): 
 			trigram = [tokens[i],tokens[i+1],tokens[i+2]] # set trigram
