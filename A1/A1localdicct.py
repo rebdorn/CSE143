@@ -186,15 +186,6 @@ def trigram_predict(vocab,test,trigram_count):
 			trigram = [tokens[i],tokens[i+1],tokens[i+2]] # set trigram
 			count_match = 0 # initialize match count to 0
 			count_similar = 0 # initialize similarity count to 0
-<<<<<<< HEAD
-			for instance in vocab: # for each trigram in train
-				if instance == trigram: # if equal to trigram in test, increase count_similar
-					count_match = instance[3]
-					count_similar += instance[3]
-				elif instance[0] == tokens[i] and instance[1] == tokens[i+1]: # only will hit this clause if not full match
-					count_similar += instance[3]
-			if count_match == 0: # this is a new trigram
-=======
 			for vocab_instance in vocab:
 				if vocab_instance[:3] == trigram:
 					count_match = vocab_instance[3]
@@ -202,7 +193,6 @@ def trigram_predict(vocab,test,trigram_count):
 				elif vocab_instance[0] == tokens[i] and vocab_instance[1] == tokens[i+1]: # only will hit this clause if not full match
 					count_similar += vocab_instance[3]
 			if count_match ==0: # this is a new bigram
->>>>>>> fa645713952e0bce5c81107763ea788c4d2f23ce
 				count_similar = trigram_count # number of trigrams
 				count_match = vocab[0][3] # number of 'UNK'
 			prob_word = float(count_match) / count_similar
