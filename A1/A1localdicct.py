@@ -61,7 +61,7 @@ def main():
 	lamb_1 = 0.33
 	lamb_2 = 0.33
 	lamb_3 = 0.34
-	#what = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count)
+	what = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count)
 	#print(what)
 	#yhat = unigram_predict(unigram_count_vec,dev) # Predict sentence likelihoods via unigram
 	#print("Calculated predictions for Unigram", yhat) # Update user
@@ -200,7 +200,6 @@ def trigram_predict(vocab,test,trigram_count):
 		tokens = get_tokens(instance) # split instance into list by " "
 		tokens.insert(0,'<START>') # prepend <START> token to each sentence
 		tokens.insert(0,'<START>')
-		tokens.append('<STOP>') # append <STOP> token to each sentence
 		tokens.append('<STOP>')
 		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
 		for i in range(0,len(tokens)-2): 
@@ -356,10 +355,12 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 	for instance in test: # for each training instance
 		init = 0 # signal we're at the beginning of a new sentence
 		tokens = get_tokens(instance) 
+		tokens.append('<STOP>') # add sgtop
 
 		# GET UNIGRAM TOKENS
 		unigram_probs = []
 		for i in range(0,len(tokens)): # for each token
+			print(tokens[i])
 			found = 0
 			for corpus_unigram in unigram:
 				if corpus_unigram[0] == tokens[i]:
@@ -368,11 +369,11 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 			if found == 0:
 				unigram_probs.append(unigram[0][1]/unigram_count)
 
-		# Get bigrams
-		tokens.insert(0,'<START>')
-		tokens.append('<STOP>')
+		# GET BIGRAMS
+		tokens.insert(0,'<START>') # add start to give context to first bigram
 		bigram_probs = []
 		for i in range(0,len(tokens)-1):
+			print(tokens[i:i+2])
 			count_similar = 0 # initialize similarity count to 0
 			count_match = 0
 			for vocab_instance in bigram: # for each bigram in train
@@ -390,10 +391,9 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 		# Get trigrams
 		tokens.insert(0,'<START>')
 		tokens.insert(0,'<START>')
-		tokens.append('<STOP>')
-		tokens.append('<STOP>')
 		trigram_probs = []
-		for i in range(0,len(tokens)-1):
+		for i in range(1,len(tokens)-2):
+			print(tokens[i:i+3])
 			count_similar = 0 # initialize similarity count to 0
 			count_match = 0
 			for vocab_instance in trigram: # for each bigram in train
@@ -407,35 +407,16 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 				count_match = trigram[0][3] # count of 'UNKS'
 			prob_word = float(count_match) / count_similar
 			trigram_probs.append(prob_word)
+		
+		# get smoothed parameters
+		#	theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
+		#	theta_bi = lamb_2 * bigram_predict(bigram,instance,bigram_count)
+		#	theta_tri = lamb_3 * trigram_predict(trigram,instance,trigram_count)
 
-
-		for i in range(0,len(tokens)-2):
-			current_unigram = tokens[i]
-			current_bigram = (tokens[i],tokens[i+1])
-			current_trigram = (tokens[i],tokens[i+1],tokens[i+2])
-			uni_prediction = unigram_predict(unigram,instance,unigram_count)
-			bi_prediction = bigram_predict(bigram,instance,bigram_count)
-			tri_prediction = trigram_predict(trigram,instance,trigram_count)
-			#if init == 0: # if we're on the first word, only unigrams
-			#	print("Token is ", current_unigram)
-			#	print(unigram_predict(unigram, current_unigram ,unigram_count))
-			#	theta_uni = lamb_1 * float(unigram_predict(unigram,instance,unigram_count))
-			#	theta_bi = 1 # TODO: how do we do the first couple unigrams?
-			#	theta_tri = 1
-			#	init += 1 # Increase location for next time
-			#elif init == 1: # if we're on the second word, only uni and bigrams
-			#	theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
-			#	theta_bi = lamb_2 * bigram_predict(bigram,instance,bigram_count)
-			#	theta_tri = 1
-			#	init += 1
-			#else: # else, we incorporate uni, bi and trigrams
-			theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
-			theta_bi = lamb_2 * bigram_predict(bigram,instance,bigram_count)
-			theta_tri = lamb_3 * trigram_predict(trigram,instance,trigram_count)
-
-		theta_smoothed = theta_uni + theta_bi + theta_tri
-		yhat_interpolated.append(theta_smoothed)
-	return yhat_interpolated
+		#theta_smoothed = theta_uni + theta_bi + theta_tri
+		#yhat_interpolated.append(theta_smoothed)
+	#return yhat_interpolated
+	return unigram_probs
 
 if __name__ == "__main__":
     main()
