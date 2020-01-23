@@ -20,10 +20,9 @@ def main():
 
 	sum_to_one = float(0)
 	for word in trigram_count_vec:
-		trigram0, trigram1, trigram2, count = word
-		#print(float(count),"/",trigram_count," = ", float(count) / trigram_count)
-		sum_to_one += float(count) / trigram_count
-	print("sum to 1 check: ", sum_to_one)
+		bigram0, bigram1, trigram2, count = word
+		sum_to_one += float(count)
+	print("unigram sum to 1 check: ", sum_to_one / trigram_count)
 
 	# Get the dev data
 	dev = [] # Initialize empty list for development
@@ -143,7 +142,7 @@ def trigram_model(train):
 		trigram, count = item # unpack this trigram
 		trigram0, trigram1, trigram2 = trigram # unpack the unigrams in the trigram
 		if count < 3: # if we've seen this trigram less than 3 times
-			freq_corpus[0][3] += 1 # consider it rare, increase the number of UNK trigrams we've seen
+			freq_corpus[0][3] += count # consider it rare, increase the number of UNK trigrams we've seen
 		else: # else, this is not a rare word
 			freq_corpus.append([trigram0,trigram1,trigram2,count]) # append this trigram and its count to our frequent corpus
 		total_count += count # add the total number of trigrams to our total_count
@@ -154,6 +153,7 @@ def unigram_predict(vocab,test,unigram_count):
 	yhat = [] # Initialize our vector of predictions as empty
 	for instance in test: # for each sentence in our test data
 		tokens = get_tokens(instance) # split the sentence into unigrams
+		tokens.append('<STOP>')
 		product = 1 # Initialize product as count of stop
 		for word in tokens: # go through unigrams in this test sentence
 			found = 0
