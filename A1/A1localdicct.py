@@ -22,7 +22,7 @@ def main():
 	for word in trigram_count_vec:
 		bigram0, bigram1, trigram2, count = word
 		sum_to_one += float(count)
-	print("unigram sum to 1 check: ", sum_to_one / trigram_count)
+	#print("unigram sum to 1 check: ", sum_to_one / trigram_count)
 
 	# Get the dev data
 	dev = [] # Initialize empty list for development
@@ -36,9 +36,6 @@ def main():
 	yhat_unigram = unigram_predict(unigram_count_vec,dev,unigram_count)
 	yhat_bigram = bigram_predict(bigram_count_vec,dev,bigram_count)
 	yhat_trigram = trigram_predict(trigram_count_vec,dev,trigram_count)
-	print(yhat_unigram)
-	print(yhat_bigram)
-	print(yhat_trigram)
 	
 	
 	sentence1_perplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
@@ -49,20 +46,20 @@ def main():
 	print("Sentence 3 bi_perplexity: ",sentence3_per)
 	
 	#print(unigram_count_vec)
-	uni_prob = uni_tot_prob(unigram_count_vec,unigram_count)
-	bi_prob = bi_tot_prob(bigram_count_vec,bigram_count)
-	tri_prob = tri_tot_prob(trigram_count_vec,trigram_count)
+	#uni_prob = uni_tot_prob(unigram_count_vec,unigram_count)
+	#bi_prob = bi_tot_prob(bigram_count_vec,bigram_count)
+	#tri_prob = tri_tot_prob(trigram_count_vec,trigram_count)
 	
 
-	#sentence1_perplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
-	#print("Sentence 1 perplexity: ",sentence1_perplex)
+	devperplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
+	print("Perplexity: ",sentence1_perplex)
 
 	
 	lamb_1 = 0.33
 	lamb_2 = 0.33
 	lamb_3 = 0.34
 	what = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count)
-	#print(what)
+	print("Interpolated predictions: ",what)
 	#yhat = unigram_predict(unigram_count_vec,dev) # Predict sentence likelihoods via unigram
 	#print("Calculated predictions for Unigram", yhat) # Update user
 
@@ -236,7 +233,7 @@ def perplexity(instances, ngrammodel, ngramvocab, ngramcount):
 				if foundword == 0: # map to UNK
 					curr_prob = float(ngramvocab[0][1])/ngramcount
 				logprob_sum += float(math.log(curr_prob,2))
-				print(math.log(curr_prob,2))
+				# print(math.log(curr_prob,2))
 		l = float((-1/len(tokens))) * float(logprob_sum)
 		toappend = 2 ** l
 		perplexities.append(toappend)
@@ -350,17 +347,14 @@ def tri_tot_prob(vocab,trigram_count):
 
 
 def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count):
-	yhat_interpolated = []
-	# piazza 37
+	yhat_interpolated = [] # initialize return values as empty list
 	for instance in test: # for each training instance
 		init = 0 # signal we're at the beginning of a new sentence
-		tokens = get_tokens(instance) 
-		tokens.append('<STOP>') # add sgtop
-
+		tokens = get_tokens(instance) # get tokens for this instance
+		tokens.append('<STOP>') # add stop token
 		# GET UNIGRAM TOKENS
-		unigram_probs = []
-		for i in range(0,len(tokens)): # for each token
-			print(tokens[i])
+		unigram_probs = [] # initialize list of word probabilities to empty
+		for i in range(0,len(tokens)): # for each token in this instance
 			found = 0
 			for corpus_unigram in unigram:
 				if corpus_unigram[0] == tokens[i]:
@@ -371,9 +365,8 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 
 		# GET BIGRAMS
 		tokens.insert(0,'<START>') # add start to give context to first bigram
-		bigram_probs = []
+		bigram_probs = [] # initialize bigram word probabilities as empty list
 		for i in range(0,len(tokens)-1):
-			print(tokens[i:i+2])
 			count_similar = 0 # initialize similarity count to 0
 			count_match = 0
 			for vocab_instance in bigram: # for each bigram in train
@@ -389,11 +382,9 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 			bigram_probs.append(prob_word)
 
 		# Get trigrams
-		tokens.insert(0,'<START>')
-		tokens.insert(0,'<START>')
-		trigram_probs = []
+		tokens.insert(0,'<START>') # add one more start for the beginning trigram
+		trigram_probs = [] # initialize trigram word probabilities as empty list
 		for i in range(1,len(tokens)-2):
-			print(tokens[i:i+3])
 			count_similar = 0 # initialize similarity count to 0
 			count_match = 0
 			for vocab_instance in trigram: # for each bigram in train
@@ -409,14 +400,13 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 			trigram_probs.append(prob_word)
 		
 		# get smoothed parameters
-		#	theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
-		#	theta_bi = lamb_2 * bigram_predict(bigram,instance,bigram_count)
-		#	theta_tri = lamb_3 * trigram_predict(trigram,instance,trigram_count)
-
-		#theta_smoothed = theta_uni + theta_bi + theta_tri
-		#yhat_interpolated.append(theta_smoothed)
-	#return yhat_interpolated
-	return unigram_probs
+		smoothed_prob = 1
+		for word_probabilities in zip(unigram_probs,bigram_probs,trigram_probs):
+			uni, bi, tri = word_probabilities
+			curr_prob = (uni * lamb_1) + (bi * lamb_2) + (tri * lamb_3)
+			smoothed_prob = smoothed_prob * curr_prob
+		yhat_interpolated.append(smoothed_prob)
+	return yhat_interpolated
 
 if __name__ == "__main__":
     main()
