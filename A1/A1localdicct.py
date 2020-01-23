@@ -18,11 +18,11 @@ def main():
 	trigram_count_vec, trigram_count = trigram_model(train)
 	print("Generated Uni/Bi/Trigram Distributions") # Tell user where we are inj program
 
-	sum_to_one = float(0)
-	for word in trigram_count_vec:
-		bigram0, bigram1, trigram2, count = word
-		sum_to_one += float(count)
-	#print("unigram sum to 1 check: ", sum_to_one / trigram_count)
+	# Check that we sum to 1
+	print("Sum-to-one checks:")
+	uni_prob = uni_tot_prob(unigram_count_vec,unigram_count)
+	bi_prob = bi_tot_prob(bigram_count_vec,bigram_count)
+	tri_prob = tri_tot_prob(trigram_count_vec,trigram_count)
 
 	# Get the dev data
 	dev = [] # Initialize empty list for development
@@ -30,14 +30,15 @@ def main():
 		for line in filehandle: # For each line 
 			current_place = line[:-1] # Remove newline
 			dev.append(current_place) # Append this sentance to our list of dev data
+	dev = dev[:10] # WHILE TESTING only do 10 instances
 
-	# WHILE TESTING only do 10 instances
-	dev = dev[:10]
+	# Get sentence probabilities from computed unigram, bigram and trigram distributions
 	yhat_unigram = unigram_predict(unigram_count_vec,dev,unigram_count)
 	yhat_bigram = bigram_predict(bigram_count_vec,dev,bigram_count)
 	yhat_trigram = trigram_predict(trigram_count_vec,dev,trigram_count)
 	
 	
+	# Calculate perplexity for unigram, bigram and trigram distributions with our dev set
 	sentence1_perplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
 	sentence2_per = bigram_per(bigram_count_vec, dev, bigram_count)
 	sentence3_per = trigram_per(trigram_count_vec, dev, trigram_count)
@@ -45,23 +46,11 @@ def main():
 	print("Sentence 2 bi_perplexity: ",sentence2_per)
 	print("Sentence 3 bi_perplexity: ",sentence3_per)
 	
-	#print(unigram_count_vec)
-	#uni_prob = uni_tot_prob(unigram_count_vec,unigram_count)
-	#bi_prob = bi_tot_prob(bigram_count_vec,bigram_count)
-	#tri_prob = tri_tot_prob(trigram_count_vec,trigram_count)
-	
-
-	devperplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
-	print("Perplexity: ",sentence1_perplex)
-
-	
 	lamb_1 = 0.33
 	lamb_2 = 0.33
 	lamb_3 = 0.34
 	what = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count)
 	print("Interpolated predictions: ",what)
-	#yhat = unigram_predict(unigram_count_vec,dev) # Predict sentence likelihoods via unigram
-	#print("Calculated predictions for Unigram", yhat) # Update user
 
 # Get list of words separated by spaces
 def get_tokens(sentence): # Return a list of normalized words
@@ -279,7 +268,7 @@ def bigram_per(vocab,test,bigram_count):
 	
 def trigram_per(vocab,test,trigram_count):
 	# Generate proabilities for sentences
-	print(trigram_count)
+	# print(trigram_count)
 	yhat = [] # initialize yhat as empty
 	logprob_sum = 0
 	tot_word = 0
@@ -318,28 +307,22 @@ def trigram_per(vocab,test,trigram_count):
 def uni_tot_prob(vocab,unigram_count):
 	tot = 0
 	for i in vocab: 
-		count = i[1]/unigram_count 
-		#print( word, ':', count)
-		tot += count
-	print('total prob of uni: ',tot)
+		tot += i[1]
+	print('total prob of uni: ',tot/unigram_count)
 	return tot 
 	
 def bi_tot_prob(vocab,bigram_count):
 	tot = 0
 	for i in vocab:
-		count = i[2]/bigram_count 
-		#print( i, ':', count)
-		tot += count
-	print('total prob of bi: ',tot)
+		tot += i[2]
+	print('total prob of bi: ',tot/bigram_count)
 	return tot 
 	
 def tri_tot_prob(vocab,trigram_count):
 	tot = 0
 	for i in vocab:
-		count = i[3]/trigram_count 
-		#print( i, ':', count)
-		tot += count
-	print('total prob of tri: ',tot)
+		tot += i[3]
+	print('total prob of tri: ',tot/trigram_count)
 	return tot 
 
 
