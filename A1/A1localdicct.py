@@ -356,8 +356,25 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 	for instance in test: # for each training instance
 		init = 0 # signal we're at the beginning of a new sentence
 		tokens = get_tokens(instance) 
+
+		# GET UNIGRAM TOKENS
+		unigram_probs = []
+		for i in range(0,len(tokens)): # for each token
+			found = 0
+			for corpus_unigram in unigram:
+				if corpus_unigram[0] == tokens[i]:
+					unigram_probs.append(corpus_unigram[1]/unigram_count)
+					found = 1
+			if found == 0:
+				unigram_probs.append(unigram[0][1]/unigram_count)
+
+		# Get bigrams
 		tokens.insert(0,'<START>')
 		tokens.append('<STOP>')
+		for i in range(0,len(tokens)-1):
+			found = 0
+			
+
 		for i in range(0,len(tokens)-2):
 			current_unigram = tokens[i]
 			current_bigram = (tokens[i],tokens[i+1])
@@ -365,22 +382,23 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 			uni_prediction = unigram_predict(unigram,instance,unigram_count)
 			bi_prediction = bigram_predict(bigram,instance,bigram_count)
 			tri_prediction = trigram_predict(trigram,instance,trigram_count)
-			if init == 0: # if we're on the first word, only unigrams
-				print("Token is ", current_unigram)
-				print(unigram_predict(unigram, current_unigram ,unigram_count))
-				theta_uni = lamb_1 * float(unigram_predict(unigram,instance,unigram_count))
-				theta_bi = 1 # TODO: how do we do the first couple unigrams?
-				theta_tri = 1
-				init += 1 # Increase location for next time
-			elif init == 1: # if we're on the second word, only uni and bigrams
-				theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
-				theta_bi = lamb_2 * bigram_predict(bigram,instance,bigram_count)
-				theta_tri = 1
-				init += 1
-			else: # else, we incorporate uni, bi and trigrams
-				theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
-				theta_bi = lamb_2 * bigram_predict(bigram,instance,bigram_count)
-				theta_tri = lamb_3 * trigram_predict(trigram,instance,trigram_count)
+			#if init == 0: # if we're on the first word, only unigrams
+			#	print("Token is ", current_unigram)
+			#	print(unigram_predict(unigram, current_unigram ,unigram_count))
+			#	theta_uni = lamb_1 * float(unigram_predict(unigram,instance,unigram_count))
+			#	theta_bi = 1 # TODO: how do we do the first couple unigrams?
+			#	theta_tri = 1
+			#	init += 1 # Increase location for next time
+			#elif init == 1: # if we're on the second word, only uni and bigrams
+			#	theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
+			#	theta_bi = lamb_2 * bigram_predict(bigram,instance,bigram_count)
+			#	theta_tri = 1
+			#	init += 1
+			#else: # else, we incorporate uni, bi and trigrams
+			theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
+			theta_bi = lamb_2 * bigram_predict(bigram,instance,bigram_count)
+			theta_tri = lamb_3 * trigram_predict(trigram,instance,trigram_count)
+
 		theta_smoothed = theta_uni + theta_bi + theta_tri
 		yhat_interpolated.append(theta_smoothed)
 	return yhat_interpolated
