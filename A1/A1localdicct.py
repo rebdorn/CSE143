@@ -7,7 +7,7 @@ import math
 def main():
 	# Get the training data
 	train = [] # Initialize empty list for training data
-	with open('A1-Data/1b_benchmark.train.tokens', 'r') as filehandle: # Open train data
+	with open('A1-Data/1b_benchmark.train.tokens', 'r',encoding="utf8") as filehandle: # Open train data
 		for line in filehandle: # For each line 
 			current_place = line[:-1] # Remove newline
 			train.append(current_place) # Append this sentance to our list of train data
@@ -27,7 +27,7 @@ def main():
 
 	# Get the dev data
 	dev = [] # Initialize empty list for development
-	with open('A1-Data/1b_benchmark.dev.tokens', 'r') as filehandle: # Open dev data
+	with open('A1-Data/1b_benchmark.dev.tokens', 'r',encoding="utf8") as filehandle: # Open dev data
 		for line in filehandle: # For each line 
 			current_place = line[:-1] # Remove newline
 			dev.append(current_place) # Append this sentance to our list of dev data
@@ -40,6 +40,20 @@ def main():
 	print(yhat_unigram)
 	print(yhat_bigram)
 	print(yhat_trigram)
+	
+	
+	sentence1_perplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
+	sentence2_per = bigram_per(bigram_count_vec, dev, bigram_count)
+	sentence3_per = trigram_per(trigram_count_vec, dev, trigram_count)
+	print("Sentence 1 perplexity: ",sentence1_perplex)
+	print("Sentence 2 bi_perplexity: ",sentence2_per)
+	print("Sentence 3 bi_perplexity: ",sentence3_per)
+	
+	#print(unigram_count_vec)
+	uni_prob = uni_tot_prob(unigram_count_vec,unigram_count)
+	bi_prob = bi_tot_prob(bigram_count_vec,bigram_count)
+	tri_prob = tri_tot_prob(trigram_count_vec,trigram_count)
+	
 
 	#sentence1_perplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
 	#print("Sentence 1 perplexity: ",sentence1_perplex)
@@ -228,6 +242,112 @@ def perplexity(instances, ngrammodel, ngramvocab, ngramcount):
 		toappend = 2 ** l
 		perplexities.append(toappend)
 	return perplexities
+
+
+def bigram_per(vocab,test,bigram_count):
+	# Generate proabilities for sentences
+	yhat = [] # initialize yhat as empty
+	logprob_sum = 0
+	tot_word = 0 
+	for i, instance in enumerate(test): # for each sentence
+		tokens = get_tokens(instance) # split instance into list by " "
+		tokens.insert(0,'<START>')
+		tokens.append('<STOP>')
+		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
+		
+		for i in range(0,len(tokens)-1): # for each bigram in this sentence
+			tot_word+=1
+			bigram = (tokens[i],tokens[i+1]) # set bigram
+			count_similar = 0 # initialize similarity count to 0
+			count_match = 0
+			for instance in vocab: # for each bigram in train
+				#print(instance[0:2], '::::', list(bigram))
+				if instance[0:2] == list(bigram):
+					#print('myes', instance)
+					count_match = instance[2]
+					count_similar += instance[2]
+				elif instance[0] == tokens[i]: # only will hit this clause if not full match
+					#print('mo')
+					count_similar += instance[2]
+			if count_match == 0: # this is a new bigram
+				count_similar = bigram_count # number of bigrams
+				count_match = vocab[0][2] # count of 'UNKS'
+			prob_word = float(count_match) / count_similar
+			logprob_sum += float(math.log(prob_word,2))
+			#prob_sentence = prob_sentence * prob_word
+	l = float((-1/tot_word)) * float(logprob_sum)
+	toappend = 2 ** l
+	yhat.append(toappend)	
+	return yhat
+	
+	
+def trigram_per(vocab,test,trigram_count):
+	# Generate proabilities for sentences
+	print(trigram_count)
+	yhat = [] # initialize yhat as empty
+	logprob_sum = 0
+	tot_word = 0
+	for i, instance in enumerate(test): # for each sentence
+		tokens = get_tokens(instance) # split instance into list by " "
+		tokens.insert(0,'<START>')
+		tokens.append('<STOP>')
+		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
+		for i in range(0,len(tokens)-2):
+			tot_word +=1
+			trigram = (tokens[i],tokens[i+1],tokens[i+2]) # set trigram
+			count_match = 0
+			count_similar = 0 # initialize similarity count to 0
+			for instance in vocab:
+				#print(instance[0:3],"::::",trigram)
+				if instance[0:3] == list(trigram):
+					#print('myes', instance)
+					count_match = instance[3]
+					count_similar += instance[3]
+				elif instance[0] == tokens[i] and instance[1] == tokens[i+1]: # only will hit this clause if not full match
+					#print('no')
+					count_similar += instance[3]
+			if count_match == 0: # this is a new bigram
+				count_similar = trigram_count # number of trigrams
+				count_match = vocab[0][3] # number of 'UNK'
+			prob_word = float(count_match) / count_similar
+			logprob_sum += float(math.log(prob_word,2))
+			prob_sentence = prob_sentence * prob_word
+	l = float((-1/tot_word)) * float(logprob_sum)
+	toappend = 2 ** l
+	yhat.append(toappend)	
+	return yhat
+
+
+
+def uni_tot_prob(vocab,unigram_count):
+	tot = 0
+	for i in vocab: 
+		count = i[1]/unigram_count 
+		#print( word, ':', count)
+		tot += count
+	print('total prob of uni: ',tot)
+	return tot 
+	
+def bi_tot_prob(vocab,bigram_count):
+	tot = 0
+	for i in vocab:
+		count = i[2]/bigram_count 
+		#print( i, ':', count)
+		tot += count
+	print('total prob of bi: ',tot)
+	return tot 
+	
+def tri_tot_prob(vocab,trigram_count):
+	tot = 0
+	for i in vocab:
+		count = i[3]/trigram_count 
+		#print( i, ':', count)
+		tot += count
+	print('total prob of tri: ',tot)
+	return tot 
+
+
+
 
 
 def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count):
