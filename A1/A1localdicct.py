@@ -371,9 +371,43 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 		# Get bigrams
 		tokens.insert(0,'<START>')
 		tokens.append('<STOP>')
+		bigram_probs = []
 		for i in range(0,len(tokens)-1):
-			found = 0
-			
+			count_similar = 0 # initialize similarity count to 0
+			count_match = 0
+			for vocab_instance in bigram: # for each bigram in train
+				if vocab_instance[:2] == tokens[i:i+2]:
+					count_match = vocab_instance[2]
+					count_similar += vocab_instance[2]
+				elif vocab_instance[0] == tokens[i]: # only will hit this clause if not full match
+					count_similar += vocab_instance[2]
+			if count_match == 0: # this is a new bigram
+				count_similar = bigram_count # number of bigrams
+				count_match = bigram[0][2] # count of 'UNKS'
+			prob_word = float(count_match) / count_similar
+			bigram_probs.append(prob_word)
+
+		# Get trigrams
+		tokens.insert(0,'<START>')
+		tokens.insert(0,'<START>')
+		tokens.append('<STOP>')
+		tokens.append('<STOP>')
+		trigram_probs = []
+		for i in range(0,len(tokens)-1):
+			count_similar = 0 # initialize similarity count to 0
+			count_match = 0
+			for vocab_instance in trigram: # for each bigram in train
+				if vocab_instance[:3] == tokens[i:i+3]:
+					count_match = vocab_instance[3]
+					count_similar += vocab_instance[3]
+				elif vocab_instance[0:2] == tokens[i:i+2]: # only will hit this clause if not full match
+					count_similar += vocab_instance[3]
+			if count_match == 0: # this is a new bigram
+				count_similar = trigram_count # number of bigrams
+				count_match = trigram[0][3] # count of 'UNKS'
+			prob_word = float(count_match) / count_similar
+			trigram_probs.append(prob_word)
+
 
 		for i in range(0,len(tokens)-2):
 			current_unigram = tokens[i]
