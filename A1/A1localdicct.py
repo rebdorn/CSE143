@@ -127,11 +127,10 @@ def unigram_predict(vocab,test,unigram_count):
 	yhat = [] # Initialize our vector of predictions as empty
 	for instance in test: # for each sentence in our test data
 		tokens = get_tokens(instance) # split the sentence into unigrams
-		product = 1 #vocab['<STOP>']/len(vocab) # Initialize product as count of stop
+		product = 1 # Initialize product as count of stop
 		for word in tokens: # go through unigrams in this test sentence
 			found = 0
 			for unigram in vocab:
-				uni, unicount = unigram
 				if unigram[0] == word:
 					count = float(unigram[1])/unigram_count
 					found = 1
@@ -150,15 +149,15 @@ def bigram_predict(vocab,test,bigram_count):
 		tokens.append('<STOP>')
 		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
 		for i in range(0,len(tokens)-1): # for each bigram in this sentence
-			bigram = (tokens[i],tokens[i+1]) # set bigram
+			bigram = [tokens[i],tokens[i+1]] # set bigram
 			count_similar = 0 # initialize similarity count to 0
 			count_match = 0
-			for instance in vocab: # for each bigram in train
-				if instance == bigram:
-					count_match = instance[2]
-					count_similar += instance[2]
+			for vocab_instance in vocab: # for each bigram in train
+				if vocab_instance[:2] == bigram:
+					count_match = vocab_instance[2]
+					count_similar += vocab_instance[2]
 				elif instance[0] == tokens[i]: # only will hit this clause if not full match
-					count_similar += instance[2]
+					count_similar += vocab_instance[2]
 			if count_match == 0: # this is a new bigram
 				count_similar = bigram_count # number of bigrams
 				count_match = vocab[0][2] # count of 'UNKS'
@@ -176,17 +175,17 @@ def trigram_predict(vocab,test,trigram_count):
 		tokens.insert(0,'<START>')
 		tokens.append('<STOP>')
 		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
-		for i in range(0,len(tokens)-2):
-			trigram = (tokens[i],tokens[i+1],tokens[i+2]) # set trigram
-			count_match = 0
+		for i in range(0,len(tokens)-2): 
+			trigram = [tokens[i],tokens[i+1],tokens[i+2]] # set trigram
+			count_match = 0 # initialize match count to 0
 			count_similar = 0 # initialize similarity count to 0
-			for instance in vocab:
-				if instance == trigram:
-					count_match = instance[3]
-					count_similar += instance[3]
-				elif instance[0] == tokens[i] and instance[1] == tokens[i+1]: # only will hit this clause if not full match
-					count_similar += instance[3]
-			if count_match == 0: # this is a new bigram
+			for vocab_instance in vocab:
+				if vocab_instance[:3] == trigram:
+					count_match = vocab_instance[3]
+					count_similar += vocab_instance[3]
+				elif vocab_instance[0] == tokens[i] and vocab_instance[1] == tokens[i+1]: # only will hit this clause if not full match
+					count_similar += vocab_instance[3]
+			if count_match ==0: # this is a new bigram
 				count_similar = trigram_count # number of trigrams
 				count_match = vocab[0][3] # number of 'UNK'
 			prob_word = float(count_match) / count_similar
@@ -198,7 +197,6 @@ def perplexity(instances, ngrammodel, ngramvocab, ngramcount):
 	perplexities = []
 	for instance in instances:
 		tokens = get_tokens(instance) # split instance into list by " "
-		tokens.insert(0,'<START>') # add the start token
 		tokens.append('<STOP>') # add the stop token
 		logprob_sum = 0
 		for word in tokens:
@@ -232,7 +230,7 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 			current_trigram = (tokens[i],tokens[i+1],tokens[i+2])
 			uni_prediction = unigram_predict(unigram,instance,unigram_count)
 			bi_prediction = bigram_predict(bigram,instance,bigram_count)
-			#tri_prediction = 
+			tri_prediction = trigram_predict(trigram,instance,trigram_count)
 			if init == 0: # if we're on the first word, only unigrams
 				theta_uni = lamb_1 * unigram_predict(unigram,instance,unigram_count)
 				theta_bi = 1 # TODO: how do we do the first couple unigrams?
