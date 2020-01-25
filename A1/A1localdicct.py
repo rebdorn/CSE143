@@ -163,6 +163,7 @@ def bigram_predict(vocab,test,bigram_count):
 		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
 		for i in range(0,len(tokens)-1): # for each bigram in this sentence
 			bigram = [tokens[i],tokens[i+1]] # set bigram
+			# print("Computing probability for ",tokens[i+1],"given ",tokens[i])
 			count_similar = 0 # initialize similarity count to 0
 			count_match = 0
 			for vocab_instance in vocab: # for each bigram in train
@@ -190,9 +191,11 @@ def trigram_predict(vocab,test,trigram_count):
 		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
 		for i in range(0,len(tokens)-2): 
 			trigram = [tokens[i],tokens[i+1],tokens[i+2]] # set trigram
+			# print("Computing probability for ",tokens[i+2],"given ",tokens[i],tokens[i+1])
 			count_match = 0 # initialize match count to 0
 			count_similar = 0 # initialize similarity count to 0
 			for vocab_instance in vocab:
+				#print("vocab instance[0-3]: ",vocab_instance)
 				if vocab_instance[:3] == trigram:
 					count_match = vocab_instance[3]
 					count_similar += vocab_instance[3]
