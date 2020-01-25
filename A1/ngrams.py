@@ -35,32 +35,27 @@ def main():
 		for line in filehandle: # For each line 
 			current_pdlace = line[:-1] # Remove newline
 			test.append(current_place) # Append this sentance to our list of dev data
-	# test = replace_raretokens(test,known_tokens) # process test data
-	# print("PROCESSED TEST DATA")
+	print("REPLACING RARE TOKENS WITH 'UNK' IN TRAIN...")
+	processed_test = replace_raretokens(test,known_tokens) # process test data
+	print("PROCESSED TEST DATA")
 
-	# Get f distribution for unigram, bigram and trigrams using the training data
+	# Get the distribution for unigram, bigram and trigrams using the training data
 	unigram_count_vec, unigram_count = unigram_model(processed_train)
 	print("GENERATING BIGRAM MODEL...")
 	bigram_count_vec, bigram_count = bigram_model(processed_train) 
 	print("GENERATING TRIGRAM MODEL...")
 	trigram_count_vec, trigram_count = trigram_model(processed_train)
 	print("Generated Uni/Bi/Trigram Distributions") # Tell user where we are inj program
-
-	# Check that we sum to 1
-	print("CHECKING PROBABILITY DISTRIBUTIONS SUM TO ONE...")
-	uni_prob = uni_tot_prob(unigram_count_vec,unigram_count)
-	bi_prob = bi_tot_prob(bigram_count_vec,bigram_count)
-	tri_prob = tri_tot_prob(trigram_count_vec,trigram_count)
 	
 	# Calculate perplexity for unigram, bigram and trigram distributions with our dev set
 	print("FETCHING PERPLEXITY SCORES FOR UNI, BI AND TRIGRAM MODELS.....")
-	#print("ON TRAIN SET")
-	#sentence1_perplex = unigram_per(unigram_count_vec, train, unigram_count)
-	#sentence2_per = bigram_per(bigram_count_vec, train, bigram_count)
-	#sentence3_per = trigram_per(trigram_count_vec, train, trigram_count)
-	#print("Unigram perplexity:",sentence1_perplex)
-	#print("Bigram perplexity: ",sentence2_per)
-	#print("Trigram perplexity: ",sentence3_per)
+	print("ON TRAIN SET")
+	sentence1_perplex = unigram_per(unigram_count_vec, processed_train, unigram_count)
+	sentence2_per = bigram_per(bigram_count_vec, processed_train, bigram_count)
+	sentence3_per = trigram_per(trigram_count_vec, processed_train, trigram_count)
+	print("Unigram perplexity:",sentence1_perplex)
+	print("Bigram perplexity: ",sentence2_per)
+	print("Trigram perplexity: ",sentence3_per)
 	print("ON DEV SET")
 	sentence1_per = unigram_per(unigram_count_vec, processed_dev, unigram_count)
 	sentence2_per = bigram_per(bigram_count_vec, processed_dev, bigram_count)
@@ -68,26 +63,26 @@ def main():
 	print("Unigram perplexity:",sentence1_per)
 	print("Bigram perplexity: ",sentence2_per)
 	print("Trigram perplexity: ",sentence3_per)
-	#print("ON TEST SET")
-	#sentence1_perplex = unigram_per(unigram_count_vec, test, unigram_count)
-	#sentence2_per = bigram_per(bigram_count_vec, test, bigram_count)
-	#sentence3_per = trigram_per(trigram_count_vec, test, trigram_count)
-	#print("Unigram perplexity:",sentence1_perplex)
-	#print("Bigram perplexity: ",sentence2_per)
-	#print("Trigram perplexity: ",sentence3_per)
+	print("ON TEST SET")
+	sentence1_perplex = unigram_per(unigram_count_vec, processed_test, unigram_count)
+	sentence2_per = bigram_per(bigram_count_vec, processed_test, bigram_count)
+	sentence3_per = trigram_per(trigram_count_vec, processed_test, trigram_count)
+	print("Unigram perplexity:",sentence1_perplex)
+	print("Bigram perplexity: ",sentence2_per)
+	print("Trigram perplexity: ",sentence3_per)
 	
 	
-	print("TESTING DIFFERENT GAMMAS FOR LINEAR INTERPOLATION SMOOTHIING....")
-	print("Gamma1 = 0.33, Gamma2 = 0.33, Gamma3 = 0.34")
+	print("TESTING DIFFERENT LambdaS FOR LINEAR INTERPOLATION SMOOTHIING....")
+	print("Lambda1 = 0.33, Lambda2 = 0.33, Lambda3 = 0.34")
 	interpolated = interpolate_per(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.33,0.33,0.34, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
-	print("Gamma1 = 0.7, Gamma2 = 0.2, Gamma3 = 0.1")
+	print("Lambda1 = 0.7, Lambda2 = 0.2, Lambda3 = 0.1")
 	interpolated = interpolate_per(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.7,0.2,0.1, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
-	print("Gamma1 = 0.1, Gamma2 = 0.4, Gamma3 = 0.5")
+	print("Lambda1 = 0.1, Lambda2 = 0.4, Lambda3 = 0.5")
 	interpolated = interpolate_per(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, 0.1, 0.4, 0.5, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
-	print("Gamma1 = 0.1, Gamma2 = 0.3, Gamma3 = 0.6")
+	print("Lambda1 = 0.1, Lambda2 = 0.3, Lambda3 = 0.6")
 	interpolated = interpolate_per(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.1,0.3,0.6, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
 
@@ -240,7 +235,7 @@ def bigram_per(vocab,test,bigram_count):
 	return yhat
 	
 def trigram_per(vocab,test,trigram_count):
-	# Generate proabilities for sentences
+	# Generate probabilities for sentences
 	yhat = [] # initialize yhat as empty
 	logprob_sum = 0
 	tot_word = 0
@@ -267,32 +262,10 @@ def trigram_per(vocab,test,trigram_count):
 	yhat.append(float(2**l))	
 	return yhat
 
-def uni_tot_prob(vocab,unigram_count):
-	tot = 0
-	for i in vocab: 
-		tot += i[1]
-	print('total prob of uni: ',tot/unigram_count)
-	return tot 
-	
-def bi_tot_prob(vocab,bigram_count):
-	tot = 0
-	for i in vocab:
-		tot += i[2]
-	print('total prob of bi: ',tot/bigram_count)
-	return tot 
-	
-def tri_tot_prob(vocab,trigram_count):
-	tot = 0
-	for i in vocab:
-		tot += i[3]
-	print('total prob of tri: ',tot/trigram_count)
-	return tot 
-
-def interpolate_per(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count):
-	# yhat_interpolated = [] # initialize return values as empty list
+def interpolate_per(data, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count):
 	sentence_probabilities = []
 	tot_words = 0
-	for sentence in test: # for each training instance
+	for sentence in data: # for each training instance
 		init = 0 # signal we're at the beginning of a new sentence
 		tokens = sentence
 		# Get log probability for this sentence given unigram model
@@ -302,6 +275,7 @@ def interpolate_per(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unig
 		prob_sentence = 1
 		for i in range(0,len(tokens)): # for each token in this instance
 			count = 0
+			tot_words += 1
 			for corpus_unigram in unigram:
 				if corpus_unigram[0] == tokens[i]:
 					count = corpus_unigram[1]
@@ -313,7 +287,6 @@ def interpolate_per(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unig
 
 		# Generate log probabilites for each unigram via bigram model
 		tokens.insert(0,'<START>') # add start to give context to first bigram
-		# bigram_probs = [] # initialize bigram word probabilities as empty list
 		bigram_wordprobs = []
 		for i in range(0,len(tokens)-1):
 			count_similar = 0 # initialize similarity count to 0
@@ -329,8 +302,6 @@ def interpolate_per(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unig
 				count_match = bigram[0][2] # count of 'UNKS'
 			prob_word = float(count_match)/count_similar
 			bigram_wordprobs.append(prob_word)
-			#prob_sentence = float(prob_sentence) * prob_word
-		#bigram_probs.append(prob_sentence) # add the log probability for this sentence
 
 		# Get trigrams
 		tokens.insert(0,'<START>') # add one more start for the beginning trigram
@@ -350,8 +321,6 @@ def interpolate_per(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unig
 				count_match = trigram[0][3] # count of 'UNKS'
 			prob_word = float(count_match)/count_similar
 			trigram_wordprobs.append(prob_word)
-			#prob_sentence = float(prob_sentence) * prob_word
-		#trigram_probs.append(prob_sentence)
 		
 		sentence_prob = 1
 		for wordprob in zip(unigram_wordprobs,bigram_wordprobs,trigram_wordprobs):
@@ -363,7 +332,6 @@ def interpolate_per(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unig
 	# Calculate the perplexity
 	total_logp = 0
 	for current_probability in sentence_probabilities:
-		tot_words += 1
 		total_logp += math.log(current_probability,2)
 	l = float(-1/tot_words) * total_logp
 	return(float(2**l))
