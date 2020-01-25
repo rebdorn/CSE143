@@ -351,7 +351,7 @@ def interpolate_per(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unig
 				count_match = trigram[0][3] # count of 'UNKS'
 			prob_word = float(count_match)/count_similar
 			prob_sentence = float(prob_sentence) * prob_word
-		trigram_probs.append(prob_sentence,2)
+		trigram_probs.append(prob_sentence)
 		
 	# get smoothed parameters
 	total_logp = 0
