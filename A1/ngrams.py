@@ -290,34 +290,31 @@ def tri_tot_prob(vocab,trigram_count):
 
 def interpolate_per(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count):
 	# yhat_interpolated = [] # initialize return values as empty list
-	unigram_probs = []
-	bigram_probs = []
-	trigram_probs = []
+	sentence_probabilities = []
 	tot_words = 0
 	for sentence in test: # for each training instance
 		init = 0 # signal we're at the beginning of a new sentence
 		tokens = sentence
-		# tokens.append('<STOP>') # add stop token
-
 		# Get log probability for this sentence given unigram model
 		tokens.pop(0) # remove start start from previous trigram perplexity calculations
 		tokens.pop(0)
-		# unigram_probs = [] # initialize list of word probabilities to empty
+		unigram_wordprobs = [] # initialize list of word probabilities to empty
 		prob_sentence = 1
 		for i in range(0,len(tokens)): # for each token in this instance
 			count = 0
-			tot_words += 1
 			for corpus_unigram in unigram:
 				if corpus_unigram[0] == tokens[i]:
 					count = corpus_unigram[1]
 			prob_word = float(count)/unigram_count
-			prob_sentence = float(prob_sentence) * prob_word
-		unigram_probs.append(prob_sentence) # add the log probability for this sentence
+			unigram_wordprobs.append(prob_word)
+			#prob_sentence = float(prob_sentence) * prob_word
+		#unigram_probs.append(prob_sentence) # add the log probability for this sentence
 
 
 		# Generate log probabilites for each unigram via bigram model
 		tokens.insert(0,'<START>') # add start to give context to first bigram
 		# bigram_probs = [] # initialize bigram word probabilities as empty list
+		bigram_wordprobs = []
 		for i in range(0,len(tokens)-1):
 			count_similar = 0 # initialize similarity count to 0
 			count_match = 0
@@ -331,12 +328,14 @@ def interpolate_per(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unig
 				count_similar = bigram_count # number of bigrams
 				count_match = bigram[0][2] # count of 'UNKS'
 			prob_word = float(count_match)/count_similar
-			prob_sentence = float(prob_sentence) * prob_word
-		bigram_probs.append(prob_sentence) # add the log probability for this sentence
+			bigram_wordprobs.append(prob_word)
+			#prob_sentence = float(prob_sentence) * prob_word
+		#bigram_probs.append(prob_sentence) # add the log probability for this sentence
 
 		# Get trigrams
 		tokens.insert(0,'<START>') # add one more start for the beginning trigram
 		trigram_probs = [] # initialize trigram word probabilities as empty list
+		trigram_wordprobs = []
 		for i in range(1,len(tokens)-2):
 			count_similar = 0 # initialize similarity count to 0
 			count_match = 0
@@ -350,14 +349,22 @@ def interpolate_per(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unig
 				count_similar = trigram_count # number of bigrams
 				count_match = trigram[0][3] # count of 'UNKS'
 			prob_word = float(count_match)/count_similar
-			prob_sentence = float(prob_sentence) * prob_word
-		trigram_probs.append(prob_sentence)
+			trigram_wordprobs.append(prob_word)
+			#prob_sentence = float(prob_sentence) * prob_word
+		#trigram_probs.append(prob_sentence)
 		
-	# get smoothed parameters
+		sentence_prob = 1
+		for wordprob in zip(unigram_wordprobs,bigram_wordprobs,trigram_wordprobs):
+			uniprob, biprob, triprob = wordprob # unpack the word probabilities
+			current_prob = (lamb_1 * uniprob) + (lamb_2 * biprob) + (lamb_3 * triprob)
+			sentence_prob = float(sentence_prob) * current_prob
+		sentence_probabilities.append(sentence_prob)
+
+	# Calculate the perplexity
 	total_logp = 0
-	for thisword_logps in zip(unigram_probs,bigram_probs,trigram_probs):
-		uni_logp, bi_logp, tri_logp = thisword_logps
-		total_logp += (math.log(uni_logp,2) * lamb_1) + (math.log(bi_logp,2) * lamb_2) + (math.log(tri_logp,2) * lamb_3)
+	for current_probability in sentence_probabilities:
+		tot_words += 1
+		total_logp += math.log(current_probability,2)
 	l = float(-1/tot_words) * total_logp
 	return(float(2**l))
 
