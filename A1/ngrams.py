@@ -79,16 +79,16 @@ def main():
 	
 	print("TESTING DIFFERENT GAMMAS FOR LINEAR INTERPOLATION SMOOTHIING....")
 	print("Gamma1 = 0.33, Gamma2 = 0.33, Gamma3 = 0.34")
-	interpolated = interpolate(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.33,0.33,0.34, unigram_count, bigram_count, trigram_count)
+	interpolated = interpolate_per(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.33,0.33,0.34, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
 	print("Gamma1 = 0.7, Gamma2 = 0.2, Gamma3 = 0.1")
-	interpolated = interpolate(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.7,0.2,0.1, unigram_count, bigram_count, trigram_count)
+	interpolated = interpolate_per(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.7,0.2,0.1, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
 	print("Gamma1 = 0.1, Gamma2 = 0.4, Gamma3 = 0.5")
-	interpolated = interpolate(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, 0.1, 0.4, 0.5, unigram_count, bigram_count, trigram_count)
+	interpolated = interpolate_per(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, 0.1, 0.4, 0.5, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
 	print("Gamma1 = 0.1, Gamma2 = 0.3, Gamma3 = 0.6")
-	interpolated = interpolate(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.1,0.3,0.6, unigram_count, bigram_count, trigram_count)
+	interpolated = interpolate_per(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.1,0.3,0.6, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
 
 # Get list of words separated by spaces
@@ -129,15 +129,12 @@ def replace_raretokens(data, known_tokens):
 		processed_sentences.append(sentence)
 	return processed_sentences
 
-
-
 # Extract dictionary of unigram vocabulary and counts of those unigrams
 def unigram_model(train):
 	unigram_corpus = {} # Initialize our dictionary as empty
 	for instance in train: # For each sentance in train
 		tokens = instance
 		tokens.append('<STOP>')
-		#print(tokens)
 		for word in tokens: # For each word in the sentence
 			if word not in unigram_corpus.keys(): # if this is a new unigram
 				unigram_corpus[word] = 1 # Initialize it's sightings to 1
@@ -194,75 +191,6 @@ def trigram_model(train):
 		total_count += count # add the total number of trigrams to our total_count
 	return (freq_corpus, total_count) # return our frequent_corpus and the total number of trigrams we saw in train
 
-# Predict a sentence's probability via previously extracted vocabulary
-def unigram_predict(vocab,test,unigram_count):
-	yhat = [] # Initialize our vector of predictions as empty
-	for instance in test: # for each sentence in our test data
-		tokens = instance
-		tokens.append('<STOP>')
-		product = 1 # Initialize product as count of stop
-		for word in tokens: # go through unigrams in this test sentence
-			count = 1
-			for unigram in vocab:
-				if unigram[0] == word:
-					count = float(unigram[1])/unigram_count
-			product = float(product)*count # add this probability to our running product
-		yhat.append(product / len(vocab)) # append this instance's probability to our predictions
-	return yhat # return predicted probabilities
-
-def bigram_predict(vocab,test,bigram_count):
-	# Generate proabilities for sentences
-	yhat = [] # initialize yhat as empty
-	for i, instance in enumerate(test): # for each sentence
-		tokens = instance
-		tokens.insert(0,'<START>')
-		#tokens.append('<STOP>')
-		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
-		for i in range(0,len(tokens)-1): # for each bigram in this sentence
-			bigram = [tokens[i],tokens[i+1]] # set bigram
-			count_similar = 0 # initialize similarity count to 0
-			count_match = 0
-			for vocab_instance in vocab: # for each bigram in train
-				if vocab_instance[:2] == bigram:
-					count_match = vocab_instance[2]
-					count_similar += vocab_instance[2]
-				elif vocab_instance[0] == tokens[i]: # only will hit this clause if not full match
-					count_similar += vocab_instance[2]
-			if count_match == 0: # if this is a new bigram
-				count_match = 1 # count of 'UNKS'
-				if count_similar == 0: # if this is totally new
-					count_similar = bigram_count
-			prob_word = float(count_match) / count_similar
-			prob_sentence = prob_sentence * prob_word
-		yhat.append(prob_sentence)
-	return yhat
-
-def trigram_predict(vocab,test,trigram_count):
-	# Generate proabilities for sentences
-	yhat = [] # initialize yhat as empty
-	for i, instance in enumerate(test): # for each sentence
-		tokens = instance
-		tokens.insert(0,'<START>')
-		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
-		for i in range(0,len(tokens)-2): 
-			trigram = [tokens[i],tokens[i+1],tokens[i+2]] # set trigram
-			count_match = 0 # initialize match count to 0
-			count_similar = 0 # initialize similarity count to 0
-			for vocab_instance in vocab:
-				if vocab_instance[:3] == trigram:
-					count_match = vocab_instance[3]
-					count_similar += vocab_instance[3]
-				elif vocab_instance[0] == tokens[i] and vocab_instance[1] == tokens[i+1]: # only will hit this clause if not full match
-					count_similar += vocab_instance[3]
-			if count_match == 0: # if this is a new trigram
-				count_match = 1 # number of 'UNK'
-				if count_similar == 0:
-					count_similar = trigram_count
-			prob_word = float(count_match) / count_similar
-			prob_sentence = prob_sentence * prob_word
-		yhat.append(prob_sentence)
-	return yhat
-
 def unigram_per(vocab,test,unigram_count):
 	yhat = [] # Initialize our vector of predictions as empty
 	logprob_sum = 0
@@ -275,9 +203,9 @@ def unigram_per(vocab,test,unigram_count):
 			count = 1
 			for unigram in vocab:
 				if unigram[0] == word:
-					count = float(unigram[1])/unigram_count
-					logprob_sum += float(math.log(count,2))
-			product = float(product)*count # add this probability to our running product
+					count = unigram[1]
+			prob_word = float(count)/unigram_count
+			logprob_sum += float(math.log(prob_word,2))
 	l = float((-1/tot_word)) * float(logprob_sum)
 	yhat.append(float(2 ** l)) # append this instance's probability to our predictions
 	return yhat # return predicted probabilities
@@ -293,8 +221,6 @@ def bigram_per(vocab,test,bigram_count):
 		for i in range(0,len(tokens)-1): # for each bigram in this sentence
 			tot_word+=1
 			bigram = [tokens[i],tokens[i+1]] # set bigram
-			if i == 0 or i == len(tokens) - 2:
-				print(bigram)
 			count_similar = 0 # initialize similarity count to 0
 			count_match = 0
 			for vocab_instance in vocab: # for each bigram in train
@@ -307,11 +233,10 @@ def bigram_per(vocab,test,bigram_count):
 				count_match = 1 # count of 'UNKS'
 				if count_similar == 0: # if this is totally new
 					count_similar = bigram_count
-			prob_word = float(count_match) / count_similar
+			prob_word = float(count_match)/count_similar
 			logprob_sum += float(math.log(prob_word,2))
-	l = float((-1/tot_word)) * float(logprob_sum)
-	toappend = 2 ** l
-	yhat.append(toappend)	
+	l = float(-1/tot_word) * float(logprob_sum)
+	yhat.append(float(2**l))	
 	return yhat
 	
 def trigram_per(vocab,test,trigram_count):
@@ -321,7 +246,6 @@ def trigram_per(vocab,test,trigram_count):
 	tot_word = 0
 	for i, tokens in enumerate(test): # for each sentence
 		tokens.insert(0,'<START>') # prepend <START> token to each sentence
-		prob_sentence = 1 # initialize product variable, 1 * anything nonzero = 1
 		for i in range(0,len(tokens)-2): 
 			tot_word +=1
 			trigram = [tokens[i],tokens[i+1],tokens[i+2]] # set trigram
@@ -339,10 +263,8 @@ def trigram_per(vocab,test,trigram_count):
 					count_similar = trigram_count
 			prob_word = float(count_match) / count_similar
 			logprob_sum += float(math.log(prob_word,2))
-			prob_sentence = prob_sentence * prob_word
 	l = float((-1/tot_word)) * float(logprob_sum)
-	toappend = 2 ** l
-	yhat.append(toappend)	
+	yhat.append(float(2**l))	
 	return yhat
 
 def uni_tot_prob(vocab,unigram_count):
@@ -366,29 +288,36 @@ def tri_tot_prob(vocab,trigram_count):
 	print('total prob of tri: ',tot/trigram_count)
 	return tot 
 
-def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count):
-	yhat_interpolated = [] # initialize return values as empty list
-	print(test)
+def interpolate_per(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_count, bigram_count, trigram_count):
+	# yhat_interpolated = [] # initialize return values as empty list
+	unigram_probs = []
+	bigram_probs = []
+	trigram_probs = []
+	tot_words = 0
 	for sentence in test: # for each training instance
 		init = 0 # signal we're at the beginning of a new sentence
-		tokens = list(sentence)
-		print(tokens)
-		tokens.append('<STOP>') # add stop token
+		tokens = sentence
+		# tokens.append('<STOP>') # add stop token
 
-		# GET UNIGRAM TOKENS
-		unigram_probs = [] # initialize list of word probabilities to empty
+		# Get log probability for this sentence given unigram model
+		tokens.pop(0) # remove start start from previous trigram perplexity calculations
+		tokens.pop(0)
+		# unigram_probs = [] # initialize list of word probabilities to empty
+		prob_sentence = 1
 		for i in range(0,len(tokens)): # for each token in this instance
-			found = 0
+			count = 0
+			tot_words += 1
 			for corpus_unigram in unigram:
 				if corpus_unigram[0] == tokens[i]:
-					unigram_probs.append(corpus_unigram[1]/unigram_count)
-					found = 1
-			if found == 0:
-				unigram_probs.append(unigram[0][1]/unigram_count)
+					count = corpus_unigram[1]
+			prob_word = float(count)/unigram_count
+			prob_sentence = float(prob_sentence) * prob_word
+		unigram_probs.append(prob_sentence) # add the log probability for this sentence
 
-		# GET BIGRAMS
+
+		# Generate log probabilites for each unigram via bigram model
 		tokens.insert(0,'<START>') # add start to give context to first bigram
-		bigram_probs = [] # initialize bigram word probabilities as empty list
+		# bigram_probs = [] # initialize bigram word probabilities as empty list
 		for i in range(0,len(tokens)-1):
 			count_similar = 0 # initialize similarity count to 0
 			count_match = 0
@@ -401,8 +330,9 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 			if count_match == 0: # this is a new bigram
 				count_similar = bigram_count # number of bigrams
 				count_match = bigram[0][2] # count of 'UNKS'
-			prob_word = float(count_match) / count_similar
-			bigram_probs.append(prob_word)
+			prob_word = float(count_match)/count_similar
+			prob_sentence = float(prob_sentence) * prob_word
+		bigram_probs.append(prob_sentence) # add the log probability for this sentence
 
 		# Get trigrams
 		tokens.insert(0,'<START>') # add one more start for the beginning trigram
@@ -419,17 +349,17 @@ def interpolate(test, unigram, bigram, trigram, lamb_1, lamb_2, lamb_3, unigram_
 			if count_match == 0: # this is a new bigram
 				count_similar = trigram_count # number of bigrams
 				count_match = trigram[0][3] # count of 'UNKS'
-			prob_word = float(count_match) / count_similar
-			trigram_probs.append(prob_word)
+			prob_word = float(count_match)/count_similar
+			prob_sentence = float(prob_sentence) * prob_word
+		trigram_probs.append(prob_sentence,2)
 		
-		# get smoothed parameters
-		smoothed_prob = 1
-		for word_probabilities in zip(unigram_probs,bigram_probs,trigram_probs):
-			uni, bi, tri = word_probabilities
-			curr_prob = (uni * lamb_1) + (bi * lamb_2) + (tri * lamb_3)
-			smoothed_prob = smoothed_prob * curr_prob
-			yhat_interpolated.append(smoothed_prob)
-	return yhat_interpolated
+	# get smoothed parameters
+	total_logp = 0
+	for thisword_logps in zip(unigram_probs,bigram_probs,trigram_probs):
+		uni_logp, bi_logp, tri_logp = thisword_logps
+		total_logp += (math.log(uni_logp,2) * lamb_1) + (math.log(bi_logp,2) * lamb_2) + (math.log(tri_logp,2) * lamb_3)
+	l = float(-1/tot_words) * total_logp
+	return(float(2**l))
 
 if __name__ == "__main__":
     main()
