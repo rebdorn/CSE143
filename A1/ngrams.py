@@ -11,6 +11,7 @@ def main():
 		for line in filehandle: # For each line 
 			current_place = line[:-1] # Remove newline
 			train.append(current_place) # Append this sentance to our list of train data
+	processed_train, known_tokens = replace(train)
 
 	# Get the dev data
 	dev = [] # Initialize empty list for development
@@ -19,6 +20,7 @@ def main():
 			current_place = line[:-1] # Remove newline
 			dev.append(current_place) # Append this sentance to our list of dev data
 	dev = dev[:10] # WHILE TESTING only do 10 instances
+	dev = other_rep(dev,known_tokens) # Map new words in dev to UNK
 
 	# Get the test data 
 	test = [] # Initialize empty list for development
@@ -28,9 +30,10 @@ def main():
 			test.append(current_place) # Append this sentance to our list of dev data
 
 	# Get probability distribution for unigram, bigram and trigrams using the training data
-	unigram_count_vec, unigram_count = unigram_model(train)
-	bigram_count_vec, bigram_count = bigram_model(train) 
-	trigram_count_vec, trigram_count = trigram_model(train)
+	unigram_count_vec, unigram_count = unigram_model(processed_train)
+	print(unigram_count_vec)
+	bigram_count_vec, bigram_count = bigram_model(processed_train) 
+	trigram_count_vec, trigram_count = trigram_model(processed_train)
 	print("Generated Uni/Bi/Trigram Distributions") # Tell user where we are inj program
 
 	# Check that we sum to 1
@@ -51,27 +54,27 @@ def main():
 	
 	# Calculate perplexity for unigram, bigram and trigram distributions with our dev set
 	print("FETCHING PERPLEXITY SCORES FOR UNI, BI AND TRIGRAM MODELS.....")
-	print("ON TRAIN SET")
-	sentence1_perplex = perplexity(train, 1, unigram_count_vec, unigram_count)
-	sentence2_per = bigram_per(bigram_count_vec, train, bigram_count)
-	sentence3_per = trigram_per(trigram_count_vec, train, trigram_count)
-	print("Unigram perplexity:",sentence1_perplex)
-	print("Bigram perplexity: ",sentence2_per)
-	print("Trigram perplexity: ",sentence3_per)
+	#print("ON TRAIN SET")
+	#sentence1_perplex = unigram_per(unigram_count_vec, train, unigram_count)
+	#sentence2_per = bigram_per(bigram_count_vec, train, bigram_count)
+	#sentence3_per = trigram_per(trigram_count_vec, train, trigram_count)
+	#print("Unigram perplexity:",sentence1_perplex)
+	#print("Bigram perplexity: ",sentence2_per)
+	#print("Trigram perplexity: ",sentence3_per)
 	print("ON DEV SET")
-	sentence1_perplex = perplexity(dev, 1, unigram_count_vec, unigram_count)
+	sentence1_per = unigram_per(unigram_count_vec, dev, unigram_count)
 	sentence2_per = bigram_per(bigram_count_vec, dev, bigram_count)
 	sentence3_per = trigram_per(trigram_count_vec, dev, trigram_count)
-	print("Unigram perplexity:",sentence1_perplex)
+	print("Unigram perplexity:",sentence1_per)
 	print("Bigram perplexity: ",sentence2_per)
 	print("Trigram perplexity: ",sentence3_per)
-	print("ON TEST SET")
-	sentence1_perplex = perplexity(test, 1, unigram_count_vec, unigram_count)
-	sentence2_per = bigram_per(bigram_count_vec, test, bigram_count)
-	sentence3_per = trigram_per(trigram_count_vec, test, trigram_count)
-	print("Unigram perplexity:",sentence1_perplex)
-	print("Bigram perplexity: ",sentence2_per)
-	print("Trigram perplexity: ",sentence3_per)
+	#print("ON TEST SET")
+	#sentence1_perplex = unigram_per(unigram_count_vec, test, unigram_count)
+	#sentence2_per = bigram_per(bigram_count_vec, test, bigram_count)
+	#sentence3_per = trigram_per(trigram_count_vec, test, trigram_count)
+	#print("Unigram perplexity:",sentence1_perplex)
+	#print("Bigram perplexity: ",sentence2_per)
+	#print("Trigram perplexity: ",sentence3_per)
 	
 	
 	print("TESTING DIFFERENT GAMMAS FOR LINEAR INTERPOLATION SMOOTHIING....")
@@ -84,7 +87,7 @@ def main():
 	print("Gamma1 = 0.1, Gamma2 = 0.4, Gamma3 = 0.5")
 	interpolated = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, 0.1, 0.4, 0.5, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
-	print("Gamma1 = 0.1, Gamma2 = 0.3, Gamma3 = 0.6s")
+	print("Gamma1 = 0.1, Gamma2 = 0.3, Gamma3 = 0.6")
 	interpolated = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.1,0.3,0.6, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
 
@@ -94,6 +97,60 @@ def get_tokens(sentence): # Return a list of normalized words
 	for word in sentence.split(" "): # Split sentence into words via regex
 		normalized.append(word) # place word in list
 	return normalized # return our list of normalized words
+
+# Replace rare words of train with 'UNK' token
+def replace(train):
+	processed =[] # Initialize set of processed data to 0
+	unigram_corpus = {} # Initialize our dictionary as empty
+	set = {''}  # Initialize our set of frequent tokens to 0
+	token_list = ['UNK']
+	for instance in train: # For each sentance in train
+		tokens = get_tokens(instance) # split sentences into words
+		for word in tokens: # For each word in the sentence
+			if word not in unigram_corpus.keys(): # if this is a new unigram
+				unigram_corpus[word] = 1 # Initialize it's sightings to 1
+			else:
+				unigram_corpus[word] += 1 # Increment our counter by 1
+	# Create new list of list with frequent unigrams, mapping rare unigrams to 'UNK'
+	freq_corpus = [['UNK',0]] # Initialize the number of rare words to 0
+	for item in unigram_corpus.items(): # Go through each word and it's count
+		#if item[1] >= 3: # If it was not sighted enough
+		freq_corpus.append([item]) # Put this unigram and its count into our new dictionary 
+		token_list.append(item[0])
+	# Create set of frequent words for simplicity
+	#for word in freq_corpus: # for each word that's made it this far
+	#	set.add(word[0]) # add this word to uor set
+	# Map rare words in train data to UNK
+	for instance in train: # For each sentance in train
+		tokens = get_tokens(instance) # split sentences into words
+		sent = ''
+		for i, word in enumerate(tokens): # For each word in the sentencesen
+			if word not in set:
+				added = 'UNK'
+			else:
+				added = word
+			sent += added
+			if i != len(tokens) - 1:
+				sent += ' '
+		processed.append(sent)
+	print("Processed train set: ",processed)
+	return processed, token_list # return our processed data
+
+def other_rep(data, known_tokens):
+	processed =[]
+	for instance in data: # For each sentance in train
+		tokens = get_tokens(instance) # split sentences into words
+		sent = ''
+		for i, word in enumerate(tokens): # For each word in the sentencese
+			if word not in known_tokens:
+				added = 'UNK'
+			else:
+				added = word
+			sent += added
+			if i != len(tokens) - 1:
+				sent += ' '
+		processed.append(sent)
+	return processed
 
 # Extract dictionary of unigram vocabulary and counts of those unigrams
 def unigram_model(train):
@@ -111,7 +168,7 @@ def unigram_model(train):
 	freq_corpus = [['UNK',0]] # Initialize the number of rare words to 0
 	for item in unigram_corpus.items(): # Go through each word and it's count
 		unigram, count = item
-		if count < 3: # If it was not sighted enough
+		if unigram == 'UNK': # If it was not sighted enough
 			freq_corpus[0][1] += count # Don't add to new dictionary, increment 'UNK' counter
 		else: # Else, we saw it enough to not be considered a rare word
 			freq_corpus.append([unigram,count]) # Put this unigram and its count into our new dictionary
@@ -132,14 +189,11 @@ def bigram_model(train):
 				bigram_corpus[bigram] += 1 # increment bigram counter
 	# go through bigram corpus, change UNKs
 	total_count = 0
-	freq_corpus = [['UNK','UNK',0]] # initialize our list of lists to be UNK
+	freq_corpus = [] # initialize our list of lists to be empty
 	for item in bigram_corpus.items():
 		bigram, count = item
 		bigram0, bigram1 = bigram
-		if count < 3:
-			freq_corpus[0][2] += count
-		else:
-			freq_corpus.append([bigram0,bigram1,count])
+		freq_corpus.append([bigram0,bigram1,count])
 		total_count += count
 	return freq_corpus, total_count
 
@@ -178,13 +232,12 @@ def unigram_predict(vocab,test,unigram_count):
 		tokens.append('<STOP>')
 		product = 1 # Initialize product as count of stop
 		for word in tokens: # go through unigrams in this test sentence
-			found = 0
+			count = 1
 			for unigram in vocab:
 				if unigram[0] == word:
+					if unigram[1] == 0:
+						print("Count is 0 for ",unigram[0])
 					count = float(unigram[1])/unigram_count
-					found = 1
-			if found == 0: # if we still havent found it
-				count = float(unigram[0][1])/unigram_count # 'UNK' count
 			product = float(product)*count # add this probability to our running product
 		yhat.append(product / len(vocab)) # append this instance's probability to our predictions
 	return yhat # return predicted probabilities
@@ -245,26 +298,26 @@ def trigram_predict(vocab,test,trigram_count):
 		yhat.append(prob_sentence)
 	return yhat
 
-def perplexity(instances, ngrammodel, ngramvocab, ngramcount):
+def unigram_per(vocab,test,unigram_count):
 	perplexities = []
-	for instance in instances:
+	logprob_sum = 0
+	tot_word = 0
+	for instance in test:
 		tokens = get_tokens(instance) # split instance into list by " "
 		tokens.append('<STOP>') # add the stop token
-		logprob_sum = 0
 		for word in tokens:
-			if ngrammodel == 1: # if we're evaluating p() on unigrams
-				foundword = 0
-				for unigram in ngramvocab: # check if we know this word
-					if word == unigram[0]: # we found this word
-						curr_prob = float(unigram[1])/ngramcount
-						foundword = 1
-				if foundword == 0: # map to UNK
-					curr_prob = float(ngramvocab[0][1])/ngramcount
-				logprob_sum += float(math.log(curr_prob,2))
-				# print(math.log(curr_prob,2))
-		l = float((-1/len(tokens))) * float(logprob_sum)
-		toappend = 2 ** l
-		perplexities.append(toappend)
+			tot_word+=1
+			foundword = 0
+			for unigram in vocab: # check if we know this word
+				if word == unigram[0]: # we found this word
+					curr_prob = float(unigram[1])/unigram_count
+					foundword = 1
+			if foundword == 0: # map to UNK
+				curr_prob = float(1)/unigram_count
+			logprob_sum += float(math.log(curr_prob,2))
+	l = float((-1/tot_word)) * float(logprob_sum)
+	toappend = float(2 ** l)
+	perplexities.append(toappend)
 	return perplexities
 
 
