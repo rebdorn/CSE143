@@ -79,16 +79,16 @@ def main():
 	
 	print("TESTING DIFFERENT GAMMAS FOR LINEAR INTERPOLATION SMOOTHIING....")
 	print("Gamma1 = 0.33, Gamma2 = 0.33, Gamma3 = 0.34")
-	interpolated = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.33,0.33,0.34, unigram_count, bigram_count, trigram_count)
+	interpolated = interpolate(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.33,0.33,0.34, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
 	print("Gamma1 = 0.7, Gamma2 = 0.2, Gamma3 = 0.1")
-	interpolated = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.7,0.2,0.1, unigram_count, bigram_count, trigram_count)
+	interpolated = interpolate(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.7,0.2,0.1, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
 	print("Gamma1 = 0.1, Gamma2 = 0.4, Gamma3 = 0.5")
-	interpolated = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, 0.1, 0.4, 0.5, unigram_count, bigram_count, trigram_count)
+	interpolated = interpolate(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, 0.1, 0.4, 0.5, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
 	print("Gamma1 = 0.1, Gamma2 = 0.3, Gamma3 = 0.6")
-	interpolated = interpolate(dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.1,0.3,0.6, unigram_count, bigram_count, trigram_count)
+	interpolated = interpolate(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.1,0.3,0.6, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
 
 # Get list of words separated by spaces
