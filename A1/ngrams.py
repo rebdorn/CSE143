@@ -24,7 +24,7 @@ def main():
 		for line in filehandle: # For each line 
 			current_place = line[:-1] # Remove newline
 			dev.append(current_place) # Append this sentance to our list of dev data
-	dev = dev[:10] # WHILE TESTING only do 10 instances
+	#dev = dev[:10]  WHILE TESTING only do 10 instances
 	print("REPLACING RARE TOKENS WITH 'UNK' IN DEV...")
 	processed_dev = replace_raretokens(dev,known_tokens) # Map new words in dev to UNK
 	processed_dev = processed_dev[:1000]
