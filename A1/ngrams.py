@@ -14,6 +14,7 @@ def main():
 	known_tokens = get_knowntokens(train)
 	print("REPLACING RARE TOKENS WITH 'UNK' IN TRAIN...")
 	processed_train = replace_raretokens(train,known_tokens)
+	processed_train = processed_train[:1000]
 	print("PROCESSED TRAIN DATA")
 	print("CHECK LENGTH OF KNOWN_TOKENS: ",len(known_tokens))
 
@@ -26,6 +27,7 @@ def main():
 	dev = dev[:10] # WHILE TESTING only do 10 instances
 	print("REPLACING RARE TOKENS WITH 'UNK' IN DEV...")
 	processed_dev = replace_raretokens(dev,known_tokens) # Map new words in dev to UNK
+	processed_dev = processed_dev[:1000]
 	print("PROCESSED DEV DATA")
 
 	# Get the test data 
@@ -36,6 +38,7 @@ def main():
 			test.append(current_place) # Append this sentance to our list of dev data
 	print("REPLACING RARE TOKENS WITH 'UNK' IN TRAIN...")
 	processed_test = replace_raretokens(test,known_tokens) # process test data
+	processed_test = processed_test[:1000]
 	print("PROCESSED TEST DATA")
 
 	# Get the distribution for unigram, bigram and trigrams using the training data
@@ -71,7 +74,24 @@ def main():
 	print("Trigram perplexity: ",sentence3_per)
 	
 	
-	print("TESTING DIFFERENT Lambdas FOR LINEAR INTERPOLATION SMOOTHIING....")
+	print("TRAIN SET TESTING DIFFERENT Lambdas FOR LINEAR INTERPOLATION SMOOTHING....")
+	print("Lambda1 = 0.33, Lambda2 = 0.33, Lambda3 = 0.34")
+	interpolated = interpolate_per(processed_train, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.33,0.33,0.34, unigram_count, bigram_count, trigram_count)
+	print(interpolated)
+	print("Lambda1 = 0.7, Lambda2 = 0.2, Lambda3 = 0.1")
+	interpolated = interpolate_per(processed_train, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.7,0.2,0.1, unigram_count, bigram_count, trigram_count)
+	print(interpolated)
+	print("Lambda1 = 0.1, Lambda2 = 0.4, Lambda3 = 0.5")
+	interpolated = interpolate_per(processed_train, unigram_count_vec, bigram_count_vec, trigram_count_vec, 0.1, 0.4, 0.5, unigram_count, bigram_count, trigram_count)
+	print(interpolated)
+	print("Lambda1 = 0.1, Lambda2 = 0.6, Lambda3 = 0.3")
+	interpolated = interpolate_per(processed_train, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.1,0.6,0.3, unigram_count, bigram_count, trigram_count)
+	print(interpolated)
+	print("Lambda1 = 0.1, Lambda2 = 0.3, Lambda3 = 0.6")
+	interpolated = interpolate_per(processed_train, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.1,0.3,0.6, unigram_count, bigram_count, trigram_count)
+	print(interpolated)
+
+	print("DEV SET TESTING DIFFERENT Lambdas FOR LINEAR INTERPOLATION SMOOTHING....")
 	print("Lambda1 = 0.33, Lambda2 = 0.33, Lambda3 = 0.34")
 	interpolated = interpolate_per(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.33,0.33,0.34, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
@@ -81,8 +101,16 @@ def main():
 	print("Lambda1 = 0.1, Lambda2 = 0.4, Lambda3 = 0.5")
 	interpolated = interpolate_per(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec, 0.1, 0.4, 0.5, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
+	print("Lambda1 = 0.1, Lambda2 = 0.6, Lambda3 = 0.3")
+	interpolated = interpolate_per(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.1,0.6,0.3, unigram_count, bigram_count, trigram_count)
+	print(interpolated)
 	print("Lambda1 = 0.1, Lambda2 = 0.3, Lambda3 = 0.6")
 	interpolated = interpolate_per(processed_dev, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.1,0.3,0.6, unigram_count, bigram_count, trigram_count)
+	print(interpolated)
+
+	# TEST 
+	print("TEST SET ON Lambda1 = 0.1, Lambda2 = 0.6, Lambda3 = 0.3")
+	interpolated = interpolate_per(processed_test, unigram_count_vec, bigram_count_vec, trigram_count_vec,0.1,0.7,0.2, unigram_count, bigram_count, trigram_count)
 	print(interpolated)
 
 def get_tokens(sentence): # Return a list of normalized words
